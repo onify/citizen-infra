@@ -30,7 +30,7 @@ example keyfile.json
 # Dry-run
 This will only output all the yaml without applying it
 
-```./onify-citizen.sh --keyfile=keyfile.json --namespace=onify-citizen-acme --dry-run=true --client_instance=test --adminPassword="somePasswordWithDigits@SpecialChars"--domain=example.org --initialLicense="SOMELICENSE"```
+```./onify-citizen.sh --keyfile=keyfile.json --namespace=onify-citizen-acme --dry-run=true --client_instance=test --adminPassword="somePasswordWithDigits@SpecialChars" --domain=example.org --initialLicense="SOMELICENSE"```
 
 # Apply
 
@@ -38,6 +38,7 @@ This will only output all the yaml without applying it
 
 # Delete
 This will delete the namespace and therefore all the other resources so it will give some errors about resources not found
+
 ```./onify-citizen.sh --keyfile=keyfile.json --namespace=onify-citizen-acme --action=delete```
 
 # Access
