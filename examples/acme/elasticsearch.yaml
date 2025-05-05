@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: onify-elasticsearch
+  name: onify-elasticsearch
+  namespace: onify-citizen-test
+spec:
+  podManagementPolicy: Parallel
+  replicas: 1
+  selector:
+    matchLabels:
+      app: onify-elasticsearch
+  serviceName: onify-elasticsearch
+  template:
+    metadata:
+      labels:
+        app: onify-elasticsearch
+    spec:
+      automountServiceAccountToken: true
+      containers:
+        - env:
+            - name: discovery.type
+              value: single-node
+            - name: cluster.name
+              value: onify-elasticsearch
+            - name: ES_JAVA_OPTS
+              value: -Xms1024m -Xmx1024m
+          image: docker.elastic.co/elasticsearch/elasticsearch:7.16.1
+          imagePullPolicy: IfNotPresent
+          name: onify-elasticsearch
+          ports:
+            - containerPort: 9300
+              name: nodes
+              protocol: TCP
+            - containerPort: 9200
+              name: client
+              protocol: TCP
+          resources: {}
+#         volumeMounts:
+#           - mountPath: /usr/share/elasticsearch/data
+#             name: onify-data
+      securityContext:
+        fsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 1000
+      shareProcessNamespace: false
+      terminationGracePeriodSeconds: 300
+  updateStrategy:
+    rollingUpdate:
+      partition: 1
+    type: RollingUpdate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: onify-elasticsearch
+  namespace: onify-citizen-test
+spec:
+  ports:
+    - name: client
+      port: 9200
+      protocol: TCP
+    - name: nodes
+      port: 9300
+      protocol: TCP
+  selector:
+    app: onify-elasticsearch
+  type: NodePort

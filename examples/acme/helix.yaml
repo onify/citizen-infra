@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: onify-helix
+    name: onify-helix
+  name: onify-helix
+  namespace: onify-citizen-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: onify-helix
+      task: onify-helix
+  serviceName: onify-helix
+  template:
+    metadata:
+      labels:
+        app: onify-helix
+        task: onify-helix
+    spec:
+      containers:
+        - env:
+            - name: ONIFY_api_internalUrl
+              value: http://onify-api:8181/api/v2
+          image: ghcr.io/onify/helix-app-lab:latest
+          imagePullPolicy: Always
+          name: onfiy-helix-app
+          ports:
+            - containerPort: 4000
+              name: onify-helix
+              protocol: TCP
+      imagePullSecrets:
+        - name: onify-regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: onify-helix
+  namespace: onify-citizen-test
+spec:
+  ports:
+    - name: onify-helix
+      port: 4000
+      protocol: TCP
+  selector:
+    app: onify-helix
+    task: onify-helix
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  name: onify-helix
+  namespace: onify-citizen-test
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: onify-citizen-test.acme.org
+      http:
+        paths:
+          - backend:
+              service:
+                name: onify-app
+                port:
+                  number: 3000
+            path: /
+            pathType: Prefix
+          - backend:
+              service:
+                name: onify-helix
+                port:
+                  number: 4000
+            path: /helix
+            pathType: Prefix

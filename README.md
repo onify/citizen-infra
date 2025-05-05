@@ -1,14 +1,36 @@
 # citizen-infra
 Citizen Hub infrastructure
 
-To apply onify-citizen using kubectl run the script:
-````
-onify-citizen.sh
-````
-The script has some parametes documented below. It will create a namespace with all resources in needed to onify-citizen in that namespace.
+The script templates manifests. 
+It has some parametes documented below. It will create a namespace with all resources in needed to onify-citizen in that namespace.
+The script will autogenerate a client_secret (ONIFY_client_secret) and app_secret (ONIFY_apiTokens_app_secret)
+It will also base64 encode app_secret to app (ONIFY_apiTokens_app_secret)
 
+
+# Parameters
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `--namespace` | Kubernetes namespace where resources will be created | `onify-citizen` |
+| `--client_instance` | Instance identifier for the client | `test` |
+| `--client_code` | Code identifier for the client | `onify-citizen` |
+| `--initialLicense` | Initial license key for the installation | `SOMELICENSE` |
+| `--adminPassword` | Password for the admin user | `password1#AAA` |
+| `--keyfile` | Path to the container registry credentials file | `keyfile.json` |
+| `--domain` | Domain name for the ingress | `onify.net` |
+| `--output` | Directory where YAML files will be generated | `.` (current directory) |
+
+The script will automatically generate:
+- `client_secret`: A random 45-character string for client authentication
+- `app_secret`: A random 50-character string for application authentication
 
 # Examples:
+
+The examples/acme manifests was created by running the script with the following parameters:
+
+```
+./onify-citizen.sh --namespace=onify-citizen-test --client_instance=test --client_code=acme --adminPassword="Sup3rS3cretP@ssw#rd" --keyfile=mykeyfile.json --output=./examples/acme --domain=acme.org
+```
 
 ## container registry
 To be able to download images a secret is created containing the content of what you specify as --keyfile.
@@ -27,44 +49,8 @@ example keyfile.json
 
 ```
 
-
-# Dry-run
-This will only output all the yaml without applying it. It will use --dry-run=client so it will not verify manifest against server.
-
-```./onify-citizen.sh --keyfile=keyfile.json --namespace=onify-citizen-acme --dry-run=true --client_instance=test --adminPassword="somePasswordWithDigits@SpecialChars" --domain=example.org --initialLicense="SOMELICENSE"```
-
-# Apply
-
-```./onify-citizen.sh --keyfile=keyfile.json --namespace=onify-citizen-acme --client_instance=test --adminPassword="somePasswordWithDigits@SpecialChars" --domain=example.org --initialLicense="SOMELICENSE"```
-
-# Delete
-This will delete the namespace and therefore all the other resources so it will give some errors about resources not found
-
-```./onify-citizen.sh --keyfile=keyfile.json --namespace=onify-citizen-acme --action=delete```
-
-# Templating
-Instead of applying the manifests directly to the cluster, you can generate YAML files for each component. This is useful for:
-- Version control of your Kubernetes manifests
-- Manual review before applying
-- Using with other deployment tools
-
-The script will create separate YAML files for each component in the specified output directory:
-
-```./onify-citizen.sh --template --output=./k8s-manifests --keyfile=keyfile.json --namespace=onify-citizen-acme --client_instance=test --adminPassword="somePasswordWithDigits@SpecialChars" --domain=example.org --initialLicense="SOMELICENSE"```
-
-This will generate the following files in the `./k8s-manifests` directory:
-- namespace.yaml
-- secrets.yaml
-- api.yaml
-- app.yaml
-- helix.yaml
-- agent.yaml
-- functions.yaml
-- worker.yaml
-- elasticsearch.yaml
-
 # Access
-The script will create a ingress for onify-citizen with the following address:
+The script will create a ingress manifest for onify-citizen with the following address:
 ```https://$namespace.$domain```
 
 

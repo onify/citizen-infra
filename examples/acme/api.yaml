@@ -1,0 +1,109 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: onify-api 
+    name: onify-api
+  name: onify-api
+  namespace: onify-citizen-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: onify-api
+      task: onify-api
+  serviceName: onify-api
+  template:
+    metadata:
+      labels:
+        app: onify-api
+        task: onify-api
+    spec:
+      containers:
+        - env:
+            - name: ENV_PREFIX
+              value: ONIFY_
+            - name: INTERPRET_CHAR_AS_DOT
+              value: _
+            - name: NODE_ENV
+              value: development
+            - name: ONIFY_adminUser_email
+              value: admin@onify.local
+            - name: ONIFY_adminUser_password
+              value: Sup3rS3cretP@ssw#rd
+            - name: ONIFY_adminUser_username
+              value: admin 
+            - name: ONIFY_apiTokens_app_secret
+              value: gJTP1vP65ZhrGXninrkSy9dWPnr3Mqg0GJ9QFfjsv2/B/ecp3s
+            - name: ONIFY_autoinstall
+              value: "true"
+            - name: ONIFY_client_code
+              value: acme
+            - name: ONIFY_client_instance
+              value: test
+            - name: ONIFY_client_secret
+              value: V6w4HUe3AiO0sWSk/CZxDI5TKcodiE1DmQSCq6LmWfeLU
+            - name: ONIFY_db_indexPrefix
+              value: onify
+            - name: ONIFY_initialLicense
+              value: SOMELICENSE
+            - name: ONIFY_logging_elasticFlushInterval
+              value: "500"
+            - name: ONIFY_logging_log
+              value: stdout,elastic
+            - name: ONIFY_resources_baseDir
+              value: /usr/share/onify/resources
+            - name: ONIFY_resources_tempDir
+              value: /usr/share/onify/temp_resources
+            - name: ONIFY_worker_cleanupInterval
+              value: "300"
+            - name: ONIFY_db_elasticsearch_host
+              value: http://onify-elasticsearch:9200
+            - name: ONIFY_websockets_agent_url
+              value: ws://onify-agent:8080/hub 
+          image: eu.gcr.io/onify-images/hub/api:infra-node-20
+          imagePullPolicy: Always
+          name: onfiy-api
+          ports:
+            - containerPort: 8181
+              name: onify-api
+              protocol: TCP
+      imagePullSecrets:
+        - name: onify-regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: onify-api
+  namespace: onify-citizen-test
+spec:
+  ports:
+    - name: onify-api
+      port: 8181
+      protocol: TCP
+      targetPort: 8181
+  selector:
+    app: onify-api
+    task: onify-api
+  type: ClusterIP
+#---
+#apiVersion: networking.k8s.io/v1
+#kind: Ingress
+#metadata:
+#  annotations:
+#    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+#    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+#  name: onify-api
+#  namespace: onify-citizen-test
+#spec:
+#  ingressClassName: nginx
+#  rules:
+#    - host: onify-api.acme.org
+#      http:
+#        paths:
+#          - backend:
+#              service:
+#                name: onify-api
+#                port:
+#                  number: 8181
+#            pathType: ImplementationSpecific

@@ -4,9 +4,9 @@ namespace="onify-citizen"        # default value if not set
 client_instance=test             # default value if not set
 client_code=onify-citizen        # default value if not set
 initialLicense=SOMELICENSE       # default value if not set
-ONIFY_adminUser_password="password1#AAA"
-ONIFY_client_secret="VkzPJv1ZdJvIeIksqh3zfSQhkwjBJvVi/2bwHAM77tsxw"                #$(LC_ALL=C tr -dc 'A-Za-z0-9/=' </dev/urandom | head -c 45)
-ONIFY_apiTokens_app_secret="=K/YN9jTePZygSsRHLp8URm2fEjAj7dgU29AUWrXYX0PHDXsUa"    #$(LC_ALL=C tr -dc 'A-Za-z0-9/=' </dev/urandom | head -c 50)
+adminPassword="password1#AAA"
+client_secret=$(LC_ALL=C tr -dc 'A-Za-z0-9/=' </dev/urandom | head -c 45)
+app_secret=$(LC_ALL=C tr -dc 'A-Za-z0-9/=' </dev/urandom | head -c 50)
 kubectl_action="apply"           # default value if not set
 keyfile="keyfile.json"           # default value if not set
 domain="onify.net"               # default value if not set
@@ -15,20 +15,17 @@ output_dir="."                   # default value if not set
 
 for arg in "$@"; do
   case $arg in
-    --dry-run=true )
-      dry_run_flag="--dry-run=client -o yaml"
-      ;;
     --namespace=*)
       namespace="${arg#*=}"
       ;;
     --client_instance=*)
       client_instance="${arg#*=}"
       ;;
+    --client_code=*)
+      client_code="${arg#*=}"
+      ;;
     --initialLicense=*)
       initialLicense="${arg#*=}"
-      ;;
-    --action=*)
-      kubectl_action="${arg#*=}"
       ;;
     --keyfile=*)
       keyfile="${arg#*=}"
@@ -37,27 +34,13 @@ for arg in "$@"; do
       domain="${arg#*=}"
       ;;
     --adminPassword=*)
-      ONIFY_adminUser_password="${arg#*=}"
-      ;;
-    --clientSecret=*)
-      ONIFY_client_secret="${arg#*=}"
-      ;;
-    --appSecret=*)
-      ONIFY_apiTokens_app_secret="${arg#*=}"
-      ;;
-    --template)
-      template_mode=true
+      adminPassword="${arg#*=}"
       ;;
     --output=*)
       output_dir="${arg#*=}"
       ;;
   esac
 done
-
-if [[ "$action" == "delete" ]]; then
-  # Remove -o yaml for delete actions
-  dry_run_flag="--dry-run=client"
-fi
 
 if [[ -n "$keyfile" && -f "$keyfile" ]]; then
   keyfile_content=$(<"$keyfile")
@@ -70,17 +53,11 @@ handle_output() {
   local function_name=$1
   local yaml_content=$2
   
-  if [[ "$template_mode" == "true" ]]; then
-    # Create output directory if it doesn't exist
-
     mkdir -p "$output_dir"
     # Write to file
     echo "$yaml_content" > "${output_dir}/${function_name}.yaml"
     echo "templated ${output_dir}/${function_name}.yaml"
-  else
-    # Pass to kubectl
-    echo "$yaml_content" | kubectl $kubectl_action $dry_run_flag -f -
-  fi
+
 }
 
 onify_namespace() {
@@ -143,11 +120,11 @@ spec:
             - name: ONIFY_adminUser_email
               value: admin@onify.local
             - name: ONIFY_adminUser_password
-              value: ${ONIFY_adminUser_password}
+              value: ${adminPassword}
             - name: ONIFY_adminUser_username
               value: admin 
             - name: ONIFY_apiTokens_app_secret
-              value: ${ONIFY_apiTokens_app_secret}
+              value: ${app_secret}
             - name: ONIFY_autoinstall
               value: "true"
             - name: ONIFY_client_code
@@ -155,7 +132,7 @@ spec:
             - name: ONIFY_client_instance
               value: ${client_instance}
             - name: ONIFY_client_secret
-              value: ${ONIFY_client_secret}
+              value: ${client_secret}
             - name: ONIFY_db_indexPrefix
               value: onify
             - name: ONIFY_initialLicense
@@ -263,7 +240,7 @@ spec:
             - name: NODE_ENV
               value: production
             - name: ONIFY_api_admintoken
-              value: Bearer $(echo "app:${ONIFY_apiTokens_app_secret}" | base64) 
+              value: Bearer $(echo "app:${app_secret}" | base64)
             - name: ONIFY_api_externalUrl
               value: /api/v2
             - name: ONIFY_disableAdminEndpoints
@@ -599,11 +576,11 @@ spec:
             - name: ONIFY_adminUser_email
               value: admin@onify.local
             - name: ONIFY_adminUser_password
-              value: ${ONIFY_adminUser_password}
+              value: ${adminPassword}
             - name: ONIFY_adminUser_username
               value: admin
             - name: ONIFY_apiTokens_app_secret
-              value: ${ONIFY_apiTokens_app_secret}
+              value: ${app_secret}
             - name: ONIFY_autoinstall
               value: "true"
             - name: ONIFY_client_code
@@ -611,7 +588,7 @@ spec:
             - name: ONIFY_client_instance
               value: ${client_instance}
             - name: ONIFY_client_secret
-              value: ${ONIFY_client_secret}
+              value: ${client_secret}
             - name: ONIFY_db_indexPrefix
               value: onify
             - name: ONIFY_initialLicense

@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: onify-functions
+    name: onify-functions
+  name: onify-functions
+  namespace: onify-citizen-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: onify-functions
+      task: onify-functions
+  serviceName: onify-functions
+  template:
+    metadata:
+      labels:
+        app: onify-functions
+        task: onify-functions
+    spec:
+      containers:
+        - env:
+            - name: NODE_ENV
+              value: production
+          image: eu.gcr.io/onify-images/citizen-functions:feature-citizen-v1 
+#         image: ghcr.io/onify/citizen-functions:feature-citizen-v1
+          imagePullPolicy: Always
+          name: onify-functions
+          ports:
+            - containerPort: 8282
+              name: onify-functions
+              protocol: TCP
+      imagePullSecrets:
+        - name: onify-regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: onify-functions
+  namespace: onify-citizen-test
+spec:
+  ports:
+    - name: onify-functions
+      port: 8282
+      protocol: TCP
+  selector:
+    app: onify-functions
+    task: onify-functions
+  type: ClusterIP
+#---
+#apiVersion: networking.k8s.io/v1
+#kind: Ingress
+#metadata:
+#  name: onify-functions
+#  namespace: onify-citizen-test
+#spec:
+#  ingressClassName: nginx
+#  rules:
+#    - host: onify-functions.acme.org
+#      http:
+#        paths:
+#          - backend:
+#              service:
+#                name: onify-functions
+#                port:
+#                  number: 8282
+#            pathType: ImplementationSpecific

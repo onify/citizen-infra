@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: onify-app
+    name: onify-app
+  name: onify-app
+  namespace: onify-citizen-test
+spec:
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  revisionHistoryLimit: 0
+  selector:
+    matchLabels:
+      app: onify-app
+      task: onify-app
+  serviceName: onify-app
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: onify-app
+        task: onify-app
+    spec:
+      containers:
+        - env:
+            - name: ENV_PREFIX
+              value: ONIFY_
+            - name: INTERPRET_CHAR_AS_DOT
+              value: _
+            - name: NODE_ENV
+              value: production
+            - name: ONIFY_api_admintoken
+              value: Bearer YXBwOmdKVFAxdlA2NVpockdYbmlucmtTeTlkV1BucjNNcWcwR0o5UUZmanN2Mi9CL2VjcDNzCg==
+            - name: ONIFY_api_externalUrl
+              value: /api/v2
+            - name: ONIFY_disableAdminEndpoints
+              value: "false"
+            - name: ONIFY_api_internalUrl
+              value: http://onify-api:8181/api/v2
+          image: eu.gcr.io/onify-images/hub/app:2.20-rc1
+          imagePullPolicy: Always
+          name: onfiy-api
+          ports:
+            - containerPort: 3000
+              name: onify-app
+              protocol: TCP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      imagePullSecrets:
+        - name: onify-regcred
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      shareProcessNamespace: false
+      terminationGracePeriodSeconds: 30
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: onify-app
+  namespace: onify-citizen-test
+spec:
+  ports:
+    - name: onify-app
+      port: 3000
+      protocol: TCP
+  selector:
+    app: onify-app
+    task: onify-app
+  type: NodePort
