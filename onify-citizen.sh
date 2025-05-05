@@ -239,7 +239,7 @@ spec:
             - name: NODE_ENV
               value: production
             - name: ONIFY_api_admintoken
-              value: Bearer $(echo "app:${app_secret}" | base64)
+              value: Bearer $(echo "app:${appSecret}" | base64)
             - name: ONIFY_api_externalUrl
               value: /api/v2
             - name: ONIFY_disableAdminEndpoints
