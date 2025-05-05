@@ -2,11 +2,12 @@
 
 namespace="onify-citizen"        # default value if not set
 clientInstance=test             # default value if not set
-clientCode=acme# default value if not set
+clientCode=acme                 # default value if not set
 initialLicense=SOMELICENSE       # default value if not set
 adminPassword="password1#AAA"
 clientSecret=$(LC_ALL=C tr -dc 'A-Za-z0-9/=' </dev/urandom | head -c 45)
 appSecret=$(LC_ALL=C tr -dc 'A-Za-z0-9/=' </dev/urandom | head -c 50)
+kubectl_action="apply"           # default value if not set
 keyfile="keyfile.json"           # default value if not set
 domain="onify.net"               # default value if not set
 output_dir="."                   # default value if not set
@@ -130,7 +131,7 @@ spec:
             - name: ONIFY_client_instance
               value: ${clientInstance}
             - name: ONIFY_client_secret
-              value: ${clientSecret}
+              value: ${client_secret}
             - name: ONIFY_db_indexPrefix
               value: onify
             - name: ONIFY_initialLicense
@@ -578,15 +579,15 @@ spec:
             - name: ONIFY_adminUser_username
               value: admin
             - name: ONIFY_apiTokens_app_secret
-              value: ${appSecret}
+              value: ${app_secret}
             - name: ONIFY_autoinstall
               value: "true"
             - name: ONIFY_client_code
-              value: ${clientCode}
+              value: ${client_code}
             - name: ONIFY_client_instance
-              value: ${clientInstance}
+              value: ${client_instance}
             - name: ONIFY_client_secret
-              value: ${clientSecret}
+              value: ${client_secret}
             - name: ONIFY_db_indexPrefix
               value: onify
             - name: ONIFY_initialLicense
