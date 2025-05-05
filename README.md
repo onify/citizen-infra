@@ -9,8 +9,8 @@ It has some parametes documented below. It will create a namespace with all reso
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `--namespace` | Kubernetes namespace where resources will be created | `onify-citizen` |
-| `--client_instance` | Instance identifier for the client | `test` |
-| `--client_code` | Code identifier for the client | `acme` |
+| `--clientInstance` | Instance identifier for the client | `test` |
+| `--clientCode` | Code identifier for the client | `acme` |
 | `--initialLicense` | Initial license key for the installation | `SOMELICENSE` |
 | `--adminPassword` | Password for the admin user | `password1#AAA` |
 | `--keyfile` | Path to the container registry credentials file | `keyfile.json` |
@@ -18,15 +18,15 @@ It has some parametes documented below. It will create a namespace with all reso
 | `--output` | Directory where YAML files will be generated | `.` (current directory) |
 
 The script will automatically generate:
-- `client_secret`: (ONIFY_client_secret ) A random 45-character string for client authentication
-- `app_secret`: (ONIFY_apiTokens_app_secret) A random 50-character string for application authentication
+- `clientSecret`: (ONIFY_client_secret ) A random 45-character string for client authentication
+- `appSecret`: (ONIFY_apiTokens_app_secret) A random 50-character string for application authentication
 
 # Examples:
 
 The examples/acme manifests was created by running the script with the following parameters:
 
 ```
-./onify-citizen.sh --namespace=onify-citizen-test --client_instance=test --client_code=acme --adminPassword="Sup3rS3cretP@ssw#rd" --keyfile=mykeyfile.json --output=./examples/acme --domain=acme.org
+./onify-citizen.sh --namespace=onify-citizen-test --clientInstance=test --clientCode=acme --adminPassword="Sup3rS3cretP@ssw#rd" --keyfile=mykeyfile.json --output=./examples/acme --domain=acme.org
 ```
 
 ## container registry
