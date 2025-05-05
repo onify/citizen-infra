@@ -3,9 +3,6 @@ Citizen Hub infrastructure
 
 The script templates manifests. 
 It has some parametes documented below. It will create a namespace with all resources in needed to onify-citizen in that namespace.
-The script will autogenerate a client_secret (ONIFY_client_secret) and app_secret (ONIFY_apiTokens_app_secret)
-It will also base64 encode app_secret to app (ONIFY_apiTokens_app_secret)
-
 
 # Parameters
 
@@ -21,8 +18,8 @@ It will also base64 encode app_secret to app (ONIFY_apiTokens_app_secret)
 | `--output` | Directory where YAML files will be generated | `.` (current directory) |
 
 The script will automatically generate:
-- `client_secret`: A random 45-character string for client authentication
-- `app_secret`: A random 50-character string for application authentication
+- `client_secret`: (ONIFY_client_secret ) A random 45-character string for client authentication
+- `app_secret`: (ONIFY_apiTokens_app_secret) A random 50-character string for application authentication
 
 # Examples:
 

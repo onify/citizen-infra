@@ -10,7 +10,6 @@ app_secret=$(LC_ALL=C tr -dc 'A-Za-z0-9/=' </dev/urandom | head -c 50)
 kubectl_action="apply"           # default value if not set
 keyfile="keyfile.json"           # default value if not set
 domain="onify.net"               # default value if not set
-template_mode=false              # default value if not set
 output_dir="."                   # default value if not set
 
 for arg in "$@"; do
