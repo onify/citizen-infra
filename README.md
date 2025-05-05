@@ -27,8 +27,9 @@ example keyfile.json
 
 ```
 
+
 # Dry-run
-This will only output all the yaml without applying it
+This will only output all the yaml without applying it. It will use --dry-run=client so it will not verify manifest against server.
 
 ```./onify-citizen.sh --keyfile=keyfile.json --namespace=onify-citizen-acme --dry-run=true --client_instance=test --adminPassword="somePasswordWithDigits@SpecialChars" --domain=example.org --initialLicense="SOMELICENSE"```
 
@@ -40,6 +41,27 @@ This will only output all the yaml without applying it
 This will delete the namespace and therefore all the other resources so it will give some errors about resources not found
 
 ```./onify-citizen.sh --keyfile=keyfile.json --namespace=onify-citizen-acme --action=delete```
+
+# Templating
+Instead of applying the manifests directly to the cluster, you can generate YAML files for each component. This is useful for:
+- Version control of your Kubernetes manifests
+- Manual review before applying
+- Using with other deployment tools
+
+The script will create separate YAML files for each component in the specified output directory:
+
+```./onify-citizen.sh --template --output=./k8s-manifests --keyfile=keyfile.json --namespace=onify-citizen-acme --client_instance=test --adminPassword="somePasswordWithDigits@SpecialChars" --domain=example.org --initialLicense="SOMELICENSE"```
+
+This will generate the following files in the `./k8s-manifests` directory:
+- namespace.yaml
+- secrets.yaml
+- api.yaml
+- app.yaml
+- helix.yaml
+- agent.yaml
+- functions.yaml
+- worker.yaml
+- elasticsearch.yaml
 
 # Access
 The script will create a ingress for onify-citizen with the following address:

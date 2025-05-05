@@ -10,6 +10,8 @@ ONIFY_apiTokens_app_secret="=K/YN9jTePZygSsRHLp8URm2fEjAj7dgU29AUWrXYX0PHDXsUa" 
 kubectl_action="apply"           # default value if not set
 keyfile="keyfile.json"           # default value if not set
 domain="onify.net"               # default value if not set
+template_mode=false              # default value if not set
+output_dir="."                   # default value if not set
 
 for arg in "$@"; do
   case $arg in
@@ -43,6 +45,12 @@ for arg in "$@"; do
     --appSecret=*)
       ONIFY_apiTokens_app_secret="${arg#*=}"
       ;;
+    --template)
+      template_mode=true
+      ;;
+    --output=*)
+      output_dir="${arg#*=}"
+      ;;
   esac
 done
 
@@ -57,19 +65,37 @@ else
   keyfile_content=""
 fi
 
+# Function to handle kubectl or template output
+handle_output() {
+  local function_name=$1
+  local yaml_content=$2
+  
+  if [[ "$template_mode" == "true" ]]; then
+    # Create output directory if it doesn't exist
 
+    mkdir -p "$output_dir"
+    # Write to file
+    echo "$yaml_content" > "${output_dir}/${function_name}.yaml"
+    echo "templated ${output_dir}/${function_name}.yaml"
+  else
+    # Pass to kubectl
+    echo "$yaml_content" | kubectl $kubectl_action $dry_run_flag -f -
+  fi
+}
 
 onify_namespace() {
-cat <<EOF | kubectl $kubectl_action $dry_run_flag -f -
+  local yaml_content=$(cat <<EOF
 apiVersion: v1
 kind: Namespace
 metadata:
   name: ${namespace}
 EOF
+)
+  handle_output "namespace" "$yaml_content"
 }
 
 onify_secrets() {
-cat <<EOF | kubectl $kubectl_action $dry_run_flag -f -
+  local yaml_content=$(cat <<EOF
 apiVersion: v1
 data:
   .dockerconfigjson: $(echo "${keyfile_content}" | base64)
@@ -79,10 +105,12 @@ metadata:
   namespace: ${namespace}
 type: kubernetes.io/dockerconfigjson
 EOF
+)
+  handle_output "secrets" "$yaml_content"
 }
 
 onify_api() {
-cat <<EOF | kubectl $kubectl_action $dry_run_flag -f -
+  local yaml_content=$(cat <<EOF
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -193,10 +221,12 @@ spec:
 #                  number: 8181
 #            pathType: ImplementationSpecific
 EOF
+)
+  handle_output "api" "$yaml_content"
 }
 
 onify_app() {
-cat <<EOF | kubectl $kubectl_action $dry_run_flag -f -
+  local yaml_content=$(cat <<EOF
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -279,10 +309,12 @@ spec:
     task: onify-app
   type: NodePort
 EOF
+)
+  handle_output "app" "$yaml_content"
 }
 
 onify_helix() {
-cat <<EOF | kubectl $kubectl_action $dry_run_flag -f -
+  local yaml_content=$(cat <<EOF
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -362,10 +394,12 @@ spec:
             path: /helix
             pathType: Prefix
 EOF
+)
+  handle_output "helix" "$yaml_content"
 }
 
 onify_agent() {
-cat <<EOF | kubectl $kubectl_action $dry_run_flag -f -
+  local yaml_content=$(cat <<EOF
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -443,10 +477,12 @@ spec:
 #                  number: 8080
 #            pathType: ImplementationSpecific
 EOF
+)
+  handle_output "agent" "$yaml_content"
 }
 
 onify_functions() {
-cat <<EOF | kubectl $kubectl_action $dry_run_flag -f -
+  local yaml_content=$(cat <<EOF
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -516,10 +552,12 @@ spec:
 #                  number: 8282
 #            pathType: ImplementationSpecific
 EOF
+)
+  handle_output "functions" "$yaml_content"
 }
 
 onify_worker() {
-cat <<EOF | kubectl $kubectl_action $dry_run_flag -f -
+  local yaml_content=$(cat <<EOF
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -602,10 +640,12 @@ spec:
       imagePullSecrets:
         - name: onify-regcred
 EOF
+)
+  handle_output "worker" "$yaml_content"
 }
 
 onify_elasticsearch() {
-cat <<EOF | kubectl $kubectl_action $dry_run_flag -f -
+  local yaml_content=$(cat <<EOF
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -676,8 +716,11 @@ spec:
     app: onify-elasticsearch
   type: NodePort
 EOF
+)
+  handle_output "elasticsearch" "$yaml_content"
 }
 
+# Main execution
 onify_namespace
 sleep 1
 onify_secrets
