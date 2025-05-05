@@ -2,7 +2,7 @@
 
 namespace="onify-citizen"        # default value if not set
 client_instance=test             # default value if not set
-client_code=onify-citizen        # default value if not set
+client_code=acme# default value if not set
 initialLicense=SOMELICENSE       # default value if not set
 adminPassword="password1#AAA"
 client_secret=$(LC_ALL=C tr -dc 'A-Za-z0-9/=' </dev/urandom | head -c 45)

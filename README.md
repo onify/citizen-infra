@@ -10,7 +10,7 @@ It has some parametes documented below. It will create a namespace with all reso
 |-----------|-------------|---------|
 | `--namespace` | Kubernetes namespace where resources will be created | `onify-citizen` |
 | `--client_instance` | Instance identifier for the client | `test` |
-| `--client_code` | Code identifier for the client | `onify-citizen` |
+| `--client_code` | Code identifier for the client | `acme` |
 | `--initialLicense` | Initial license key for the installation | `SOMELICENSE` |
 | `--adminPassword` | Password for the admin user | `password1#AAA` |
 | `--keyfile` | Path to the container registry credentials file | `keyfile.json` |
