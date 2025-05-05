@@ -131,7 +131,7 @@ spec:
             - name: ONIFY_client_instance
               value: ${clientInstance}
             - name: ONIFY_client_secret
-              value: ${client_secret}
+              value: ${clientSecret}
             - name: ONIFY_db_indexPrefix
               value: onify
             - name: ONIFY_initialLicense
@@ -579,15 +579,15 @@ spec:
             - name: ONIFY_adminUser_username
               value: admin
             - name: ONIFY_apiTokens_app_secret
-              value: ${app_secret}
+              value: ${appSecret}
             - name: ONIFY_autoinstall
               value: "true"
             - name: ONIFY_client_code
-              value: ${client_code}
+              value: ${clientCode}
             - name: ONIFY_client_instance
-              value: ${client_instance}
+              value: ${clientInstance}
             - name: ONIFY_client_secret
-              value: ${client_secret}
+              value: ${clientSecret}
             - name: ONIFY_db_indexPrefix
               value: onify
             - name: ONIFY_initialLicense
