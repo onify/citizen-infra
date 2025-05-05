@@ -43,7 +43,7 @@ spec:
             - name: ONIFY_adminUser_username
               value: admin
             - name: ONIFY_apiTokens_app_secret
-              value: tgEB8Ds2TXM7BFjiGGaS1KOlB0iHfxZL8zjAME7DSU9Cdu6iWQ
+              value: NoPfRK7W1akib50SJN=XqUzxyqRQs9/jHMmif880CgUxJlPixT
             - name: ONIFY_autoinstall
               value: "true"
             - name: ONIFY_client_code
@@ -51,7 +51,7 @@ spec:
             - name: ONIFY_client_instance
               value: test
             - name: ONIFY_client_secret
-              value: 9m21u5bNayGJNM67Tn8Tvb0PRnI9H3kZ4F5ryDvpLPatD
+              value: LnUpND/7NR90k80az5eWag0uVWFfxuVyiL7y3L9Fg5kC1
             - name: ONIFY_db_indexPrefix
               value: onify
             - name: ONIFY_initialLicense
