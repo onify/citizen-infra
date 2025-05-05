@@ -175,27 +175,27 @@ spec:
     app: onify-api
     task: onify-api
   type: ClusterIP
-#---
-#apiVersion: networking.k8s.io/v1
-#kind: Ingress
-#metadata:
-#  annotations:
-#    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
-#    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
-#  name: onify-api
-#  namespace: ${namespace}
-#spec:
-#  ingressClassName: nginx
-#  rules:
-#    - host: onify-api.${domain}
-#      http:
-#        paths:
-#          - backend:
-#              service:
-#                name: onify-api
-#                port:
-#                  number: 8181
-#            pathType: ImplementationSpecific
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  name: onify-api
+  namespace: ${namespace}
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: ${namespace}-api.${domain}
+      http:
+        paths:
+          - backend:
+              service:
+                name: onify-api
+                port:
+                  number: 8181
+            pathType: ImplementationSpecific
 EOF
 )
   handle_output "api" "$yaml_content"

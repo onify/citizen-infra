@@ -49,3 +49,6 @@ example keyfile.json
 # Access / Ingress
 The script will create a ingress manifest for onify-citizen with the following address:
 ```https://$namespace.$domain```
+
+A ingress for API is also created with the address:
+```https://$namespace-api.$domain```
