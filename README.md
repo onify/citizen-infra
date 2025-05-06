@@ -1,8 +1,7 @@
-# citizen-infra
-Citizen Hub infrastructure
+# Citizen Hub Infrastructure
 
-The script templates manifests. 
-It has some parametes documented below. It will create a namespace with all resources in needed to onify-citizen in that namespace.
+The script generates Kubernetes manifests from templates.
+It has some parameters documented below. It will create a namespace and all resources needed to run onify-citizen in that namespace.
 
 # Parameters
 
@@ -18,47 +17,49 @@ It has some parametes documented below. It will create a namespace with all reso
 | `--output` | Directory where YAML files will be generated | `.` (current directory) |
 
 The script will automatically generate:
-- `clientSecret`: (ONIFY_client_secret ) A random 45-character string for client authentication
+- `clientSecret`: (ONIFY_client_secret) A random 45-character string for client authentication
 - `appSecret`: (ONIFY_apiTokens_app_secret) A random 50-character string for application authentication
 
 # Examples:
 
-The examples/acme manifests was created by running the script with the following parameters:
+The manifests in `examples/acme` were created by running the script with the following parameters:
 
 ```
 ./onify-citizen.sh --namespace=onify-citizen-test --clientInstance=test --clientCode=acme --adminPassword="Sup3rS3cretP@ssw#rd" --keyfile=mykeyfile.json --output=./examples/acme --domain=acme.org
 ```
 
-
 # How to provision onify-citizen using this repository
 
 1. Run the script to template manifests by running:
-```
+
 ```
 ./onify-citizen.sh --namespace=onify-citizen-test --clientInstance=test --clientCode=acme --adminPassword="Sup3rS3cretP@ssw#rd" --keyfile=mykeyfile.json --output=./examples/acme --domain=acme.org
 ```
 
 2. Start with creating the namespace by running:
+
 ```
 kubectl apply -f examples/acme/namespace.yaml
 ```
-3. Apply rest of the resources with:
-````
-kubectl apply -f examples/acme
+
+3. Apply the rest of the resources with:
 
 ```
-## delete
+kubectl apply -f examples/acme
+```
+
+## Delete
+
 Run:
 ```
 kubectl delete -f examples/acme
-````
+```
 
+## Container registry
 
+To download images, a secret is created containing the contents of the file specified by --keyfile.
+Example keyfile.json:
 
-
-## container registry
-To be able to download images a secret is created containing the content of what you specify as --keyfile.
-example keyfile.json
 ```
 {
   "auths": {
@@ -70,16 +71,25 @@ example keyfile.json
     }
   }
 }
-
 ```
 
 # Access / Ingress
-The script will create a ingress manifest for onify-citizen with the following address:
-```https://$namespace.$domain```
 
-/helix  > helix
-/ > hub-app
+## APP (and Helix)
 
+The script will create an ingress manifest for onify-citizen with the following address:
+```
+https://$namespace.$domain
+```
 
-A ingress for API is also created with the address:
-```https://$namespace-api.$domain```
+### Routes
+
+* `/helix` > `helix`
+* `/` > `hub-app`
+
+## API
+
+An ingress for the API is also created with the address:
+```
+https://$namespace-api.$domain
+```
