@@ -434,24 +434,6 @@ spec:
     app: onify-agent
     task: onify-agent
   type: ClusterIP
-#---
-#apiVersion: networking.k8s.io/v1
-#kind: Ingress
-#metadata:
-#  name: onify-agent
-#  namespace: ${namespace}
-#spec:
-#  ingressClassName: nginx
-#  rules:
-#    - host: onify-agent.${domain}
-#      http:
-#        paths:
-#          - backend:
-#              service:
-#                name: onify-agent
-#                port:
-#                  number: 8080
-#            pathType: ImplementationSpecific
 EOF
 )
   handle_output "agent" "$yaml_content"
@@ -509,25 +491,6 @@ spec:
     app: onify-functions
     task: onify-functions
   type: ClusterIP
-#---
-#apiVersion: networking.k8s.io/v1
-#kind: Ingress
-#metadata:
-#  name: onify-functions
-#  namespace: ${namespace}
-#spec:
-#  ingressClassName: nginx
-#  rules:
-#    - host: onify-functions.${domain}
-#      http:
-#        paths:
-#          - backend:
-#              service:
-#                name: onify-functions
-#                port:
-#                  number: 8282
-#            pathType: ImplementationSpecific
-EOF
 )
   handle_output "functions" "$yaml_content"
 }
