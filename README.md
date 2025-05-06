@@ -29,6 +29,33 @@ The examples/acme manifests was created by running the script with the following
 ./onify-citizen.sh --namespace=onify-citizen-test --clientInstance=test --clientCode=acme --adminPassword="Sup3rS3cretP@ssw#rd" --keyfile=mykeyfile.json --output=./examples/acme --domain=acme.org
 ```
 
+
+# How to provision onify-citizen using this repository
+
+1. Run the script to template manifests by running:
+```
+```
+./onify-citizen.sh --namespace=onify-citizen-test --clientInstance=test --clientCode=acme --adminPassword="Sup3rS3cretP@ssw#rd" --keyfile=mykeyfile.json --output=./examples/acme --domain=acme.org
+```
+
+2. Start with creating the namespace by running:
+```
+kubectl apply -f examples/acme/namespace.yaml
+```
+3. Apply rest of the resources with:
+````
+kubectl apply -f examples/acme
+
+```
+## delete
+Run:
+```
+kubectl delete -f examples/acme
+````
+
+
+
+
 ## container registry
 To be able to download images a secret is created containing the content of what you specify as --keyfile.
 example keyfile.json

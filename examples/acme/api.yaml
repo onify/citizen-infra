@@ -34,7 +34,7 @@ spec:
             - name: ONIFY_adminUser_username
               value: admin 
             - name: ONIFY_apiTokens_app_secret
-              value: NoPfRK7W1akib50SJN=XqUzxyqRQs9/jHMmif880CgUxJlPixT
+              value: WL3MTiWOTL6teNmYJ2hf=AmPQ1mVytk706U5D/qNS2/aosMioK
             - name: ONIFY_autoinstall
               value: "true"
             - name: ONIFY_client_code
@@ -42,7 +42,7 @@ spec:
             - name: ONIFY_client_instance
               value: test
             - name: ONIFY_client_secret
-              value: LnUpND/7NR90k80az5eWag0uVWFfxuVyiL7y3L9Fg5kC1
+              value: 335iKCl8v2wGG3qvSMDHtpLB=IueG0bztaJE73QkfUTxk
             - name: ONIFY_db_indexPrefix
               value: onify
             - name: ONIFY_initialLicense
@@ -86,24 +86,24 @@ spec:
     app: onify-api
     task: onify-api
   type: ClusterIP
-#---
-#apiVersion: networking.k8s.io/v1
-#kind: Ingress
-#metadata:
-#  annotations:
-#    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
-#    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
-#  name: onify-api
-#  namespace: onify-citizen-test
-#spec:
-#  ingressClassName: nginx
-#  rules:
-#    - host: onify-api.acme.org
-#      http:
-#        paths:
-#          - backend:
-#              service:
-#                name: onify-api
-#                port:
-#                  number: 8181
-#            pathType: ImplementationSpecific
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+  name: onify-api
+  namespace: onify-citizen-test
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: onify-citizen-test-api.acme.org
+      http:
+        paths:
+          - backend:
+              service:
+                name: onify-api
+                port:
+                  number: 8181
+            pathType: ImplementationSpecific

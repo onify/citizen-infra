@@ -661,10 +661,8 @@ EOF
 
 # Main execution
 onify_namespace
-sleep 1
 onify_secrets
 onify_elasticsearch
-sleep 3
 onify_api
 onify_agent
 onify_app

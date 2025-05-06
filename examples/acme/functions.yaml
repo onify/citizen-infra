@@ -48,21 +48,3 @@ spec:
     app: onify-functions
     task: onify-functions
   type: ClusterIP
-#---
-#apiVersion: networking.k8s.io/v1
-#kind: Ingress
-#metadata:
-#  name: onify-functions
-#  namespace: onify-citizen-test
-#spec:
-#  ingressClassName: nginx
-#  rules:
-#    - host: onify-functions.acme.org
-#      http:
-#        paths:
-#          - backend:
-#              service:
-#                name: onify-functions
-#                port:
-#                  number: 8282
-#            pathType: ImplementationSpecific

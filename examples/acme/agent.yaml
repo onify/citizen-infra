@@ -56,21 +56,3 @@ spec:
     app: onify-agent
     task: onify-agent
   type: ClusterIP
-#---
-#apiVersion: networking.k8s.io/v1
-#kind: Ingress
-#metadata:
-#  name: onify-agent
-#  namespace: onify-citizen-test
-#spec:
-#  ingressClassName: nginx
-#  rules:
-#    - host: onify-agent.acme.org
-#      http:
-#        paths:
-#          - backend:
-#              service:
-#                name: onify-agent
-#                port:
-#                  number: 8080
-#            pathType: ImplementationSpecific
