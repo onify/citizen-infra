@@ -223,7 +223,6 @@ spec:
   serviceName: onify-app
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: onify-app
         task: onify-app
@@ -517,7 +516,6 @@ spec:
   serviceName: onify-worker
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: onify-worker
         task: onify-worker
