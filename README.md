@@ -77,5 +77,9 @@ example keyfile.json
 The script will create a ingress manifest for onify-citizen with the following address:
 ```https://$namespace.$domain```
 
+/helix  > helix
+/ > hub-app
+
+
 A ingress for API is also created with the address:
 ```https://$namespace-api.$domain```
