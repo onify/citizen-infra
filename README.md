@@ -3,7 +3,18 @@
 The script generates Kubernetes manifests from templates.
 It has some parameters documented below. It will create a namespace and all resources needed to run onify-citizen in that namespace.
 
-# Parameters
+> For more information about requirements, see [requirements](https://support.onify.co/docs/requirements).
+
+> For more informatoon about installation, see [installation](https://github.com/onify/install). 
+
+## Prerequisites
+
+* Client code
+* Instance code
+* License
+* Access to images (gcr/ghcr)
+
+## Parameters
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
@@ -20,47 +31,51 @@ The script will automatically generate:
 - `clientSecret`: (ONIFY_client_secret) A random 45-character string for client authentication
 - `appSecret`: (ONIFY_apiTokens_app_secret) A random 50-character string for application authentication
 
-# Examples:
+## Examples
 
 The manifests in `examples/acme` were created by running the script with the following parameters:
 
-```
+```bash
 ./onify-citizen.sh --namespace=onify-citizen-test --clientInstance=test --clientCode=acme --adminPassword="Sup3rS3cretP@ssw#rd" --keyfile=mykeyfile.json --output=./examples/acme --domain=acme.org
 ```
 
-# How to provision onify-citizen using this repository
+## Provisioning
+
+Onify Citizen Hub is based on several (micro)services; `api`, `worker`, `app`, `helix`, `functions` and `elasticsearch`. 
+Here is how you can create Kubernetes manifest for these services;
 
 1. Run the script to template manifests by running:
 
-```
-./onify-citizen.sh --namespace=onify-citizen-test --clientInstance=test --clientCode=acme --adminPassword="Sup3rS3cretP@ssw#rd" --keyfile=mykeyfile.json --output=./examples/acme --domain=acme.org
+```bash
+./onify-citizen.sh --namespace=onify-citizen-prod --clientInstance=prod --clientCode=ace --adminPassword="Sup3rS3cretP@ssw#rd" --keyfile=keyfile.json --output=./prod --domain=acme.com
 ```
 
 2. Start with creating the namespace by running:
 
-```
-kubectl apply -f examples/acme/namespace.yaml
+```bash
+kubectl apply -f prod/namespace.yaml
 ```
 
 3. Apply the rest of the resources with:
 
-```
-kubectl apply -f examples/acme
+```bash
+kubectl apply -f prod/
 ```
 
-## Delete
+### Delete
 
-Run:
-```
+To delete and start over, run:
+
+```bash
 kubectl delete -f examples/acme
 ```
 
-## Container registry
+### Container registry
 
 To download images, a secret is created containing the contents of the file specified by --keyfile.
 Example keyfile.json:
 
-```
+```json
 {
   "auths": {
     "eu.gcr.io": {
@@ -73,43 +88,47 @@ Example keyfile.json:
 }
 ```
 
-# Access / Ingress
+### Access / Ingress
 
-## APP (and Helix)
+#### APP (and Helix)
 
 The script will create an ingress manifest for onify-citizen with the following address:
+
 ```
 https://$namespace.$domain
 ```
 
-### Routes
+*Routes*
 
 * `/helix` > `helix`
 * `/` > `hub-app`
 
-## API
+#### API
 
 An ingress for the API is also created with the address:
+
 ```
 https://$namespace-api.$domain
 ```
 
-# Cert and TLS
+## Cert and TLS
 
-## Lets encrypt
-This script does not create annotations for certificates. Here´s an example if certmanager is used in you cluster
-```
+### Let's Encrypt
+
+This script does not create annotations for certificates. Here´s an example if certmanager is used in you cluster:
+
+```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
-  name: kar-dev-hub-agent
-  namespace: kar-dev
+  name: onify-citizen-ingress
+  namespace: onify-citizen-test
 spec:
   ingressClassName: nginx
   rules:
-    - host: onify-citizen-test.myspecialdomain.org
+    - host: onify-citizen-test.acme.org
       http:
         paths:
           - backend:
@@ -129,11 +148,11 @@ spec:
 
   tls:
     - hosts:
-        - onify-citizen-test.myspecialdomain.org
+        - onify-citizen-test.acme.org
       secretName: tls-secret-app-prod
 ```
 
-## Custom certificate
+### Custom certificate
 
 Create a secret with your custom certificate. Here's an example:
 
@@ -162,7 +181,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: onify-citizen.example.com
+    - host: onify-citizen.acme.org
       http:
         paths:
           - backend:
@@ -181,30 +200,38 @@ spec:
             pathType: Prefix
   tls:
     - hosts:
-        - onify-citizen.example.com
+        - onify-citizen.acme.org
       secretName: custom-tls-secret
 
 ```
 
 Note: The certificate and key in the example above are just placeholders. Replace them with your actual base64 encoded certificate and private key.
 
-# Onify agent
+## Onify agent
+
 Onify agent is not provisioned default by using this script. To get the script so create those manifests aswell uncomment this line:
+
 ```
 #onify_agent
 ```
+
 Remember to add this environmental variables to api and worker if you need agent:
+
+```
 ONIFY_websockets_agent_url = ws://onify-agent:8080/hub
+```
 
-# Elasticsearch
+## Elasticsearch
 
-## Persistent disk and backup
+### Persistent disk and backup
+
 This script does not create any PVC or persistent disk so if that needed you need to create a PVC and change the manifests by your own. 
 It also does not create backup manifests.
 
-In the examples/elasticsearch/pvc_and_backup_example.yaml theres a example of a PVC and a statefulset using PVC and also an additional volume dedicated for backups.
+In the `examples/elasticsearch/pvc_and_backup_example.yaml` theres a example of a PVC and a statefulset using PVC and also an additional volume dedicated for backups.
 To then enable backups this needs to be run against the elastic cluster:
-```
+
+```bash
 curl -s \
  -X PUT \
  "http://elasticsearch.namespace.svc.cluster.local:9200/_snapshot/backup_repo" \
@@ -215,6 +242,5 @@ curl -s \
     }
   }'
 ```
-This could be executed from the elastic pod
 
-
+This could be executed from the elastic pod.
