@@ -1,0 +1,167 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: elasticsearch-data
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 10Gi
+  hostPath:
+    path: /usr/share/elasticsearch/data
+    type: ""
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: elasticsearch-backup
+spec:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 10Gi
+  hostPath:
+    path: /usr/share/elasticsearch/backup
+    type: ""
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local
+  volumeMode: Filesystem
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: elasticsearch-data
+  name: elasticsearch-data
+  namespace: onify-citizen-test 
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard-rwo
+  volumeMode: Filesystem
+status:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 10Gi
+  phase: Bound
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: elasticsearch-backup
+  name: elasticsearch-backup
+  namespace: onify-citizen-test 
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: standard-rwo
+  volumeMode: Filesystem
+status:
+  accessModes:
+  - ReadWriteOnce
+  capacity:
+    storage: 10Gi
+  phase: Bound
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: elasticsearch
+  name: elasticsearch
+  namespace: onify-citizen-test
+spec:
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  podManagementPolicy: Parallel
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: elasticsearch
+  serviceName: elasticsearch
+  template:
+    metadata:
+      labels:
+        app: elasticsearch
+    spec:
+      automountServiceAccountToken: true
+      containers:
+      - env:
+        - name: discovery.type
+          value: single-node
+        - name: cluster.name
+          value: onify-citizen-test-onify-elasticsearch
+        - name: ES_JAVA_OPTS
+          value: -Xms1024m -Xmx1024m
+        - name: "path.repo"
+          value: /usr/share/elasticsearch/backup
+        image: docker.elastic.co/elasticsearch/elasticsearch:7.16.1
+        imagePullPolicy: IfNotPresent
+        name: elasticsearch
+        ports:
+        - containerPort: 9300
+          name: nodes
+          protocol: TCP
+        - containerPort: 9200
+          name: client
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /usr/share/elasticsearch/data
+          name: elasticsearch-data
+        - mountPath: /usr/share/elasticsearch/backup
+          name: elasticsearch-backup
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 1000
+      shareProcessNamespace: false
+      terminationGracePeriodSeconds: 300
+  updateStrategy:
+    rollingUpdate:
+      partition: 1
+    type: RollingUpdate
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: elasticsearch-data
+      namespace: onify-citizen-test
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+      volumeMode: Filesystem
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: elasticsearch-backup
+      namespace: onify-citizen-test
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+      volumeMode: Filesystem

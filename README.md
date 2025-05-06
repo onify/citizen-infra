@@ -93,3 +93,128 @@ An ingress for the API is also created with the address:
 ```
 https://$namespace-api.$domain
 ```
+
+# Cert and TLS
+
+## Lets encrypt
+This script does not create annotations for certificates. Here´s an example if certmanager is used in you cluster
+```
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  name: kar-dev-hub-agent
+  namespace: kar-dev
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: onify-citizen-test.myspecialdomain.org
+      http:
+        paths:
+          - backend:
+              service:
+                name: onify-app
+                port:
+                  number: 3000
+            path: /
+            pathType: Prefix
+          - backend:
+              service:
+                name: onify-helix
+                port:
+                  number: 4000
+            path: /helix
+            pathType: Prefix
+
+  tls:
+    - hosts:
+        - onify-citizen-test.myspecialdomain.org
+      secretName: tls-secret-app-prod
+```
+
+## Custom certificate
+
+Create a secret with your custom certificate. Here's an example:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: custom-tls-secret
+  namespace: onify-citizen
+type: kubernetes.io/tls
+data:
+  # The base64 encoded certificate
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUZhekNDQTFPZ0F3SUJBZ0lVZXhhbXBsZWNlcnRpZmljYXRlYmFzZTY0ZGF0YQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0t
+  # The base64 encoded private key
+  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUpRd0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQ1Mwd2dna3BBZ0VBQW9JQ0FRQzlYWkFBCi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0=
+```
+
+And here's an example of an Ingress using the custom certificate:
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: onify-citizen-ingress
+  namespace: onify-citizen
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: onify-citizen.example.com
+      http:
+        paths:
+          - backend:
+              service:
+                name: onify-app
+                port:
+                  number: 3000
+            path: /
+            pathType: Prefix
+          - backend:
+              service:
+                name: onify-helix
+                port:
+                  number: 4000
+            path: /helix
+            pathType: Prefix
+  tls:
+    - hosts:
+        - onify-citizen.example.com
+      secretName: custom-tls-secret
+
+```
+
+Note: The certificate and key in the example above are just placeholders. Replace them with your actual base64 encoded certificate and private key.
+
+# Onify agent
+Onify agent is not provisioned default by using this script. To get the script so create those manifests aswell uncomment this line:
+```
+#onify_agent
+```
+Remember to add this environmental variables to api and worker if you need agent:
+ONIFY_websockets_agent_url = ws://onify-agent:8080/hub
+
+# Elasticsearch
+
+## Persistent disk and backup
+This script does not create any PVC or persistent disk so if that needed you need to create a PVC and change the manifests by your own. 
+It also does not create backup manifests.
+
+In the examples/elasticsearch/pvc_and_backup_example.yaml theres a example of a PVC and a statefulset using PVC and also an additional volume dedicated for backups.
+To then enable backups this needs to be run against the elastic cluster:
+```
+curl -s \
+ -X PUT \
+ "http://elasticsearch.namespace.svc.cluster.local:9200/_snapshot/backup_repo" \
+ -H "Content-Type: application/json" -d '{
+    "type": "fs",
+    "settings": {
+      "location": "/usr/share/elasticsearch/backup"
+    }
+  }'
+```
+This could be executed from the elastic pod
+
+

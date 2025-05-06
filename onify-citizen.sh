@@ -148,8 +148,6 @@ spec:
               value: "300"
             - name: ONIFY_db_elasticsearch_host
               value: http://onify-elasticsearch:9200
-            - name: ONIFY_websockets_agent_url
-              value: ws://onify-agent:8080/hub 
           image: eu.gcr.io/onify-images/hub/api:infra-node-20
           imagePullPolicy: Always
           name: onfiy-api
@@ -567,8 +565,6 @@ spec:
               value: "300"
             - name: ONIFY_db_elasticsearch_host
               value: http://onify-elasticsearch:9200
-            - name: ONIFY_websockets_agent_url
-              value: ws://onify-agent:8080/hub 
           image: eu.gcr.io/onify-images/hub/api:infra-node-20
           imagePullPolicy: Always
           name: onify-worker
@@ -614,7 +610,7 @@ spec:
             - name: ES_JAVA_OPTS
               value: -Xms1024m -Xmx1024m
           image: docker.elastic.co/elasticsearch/elasticsearch:7.16.1
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           name: onify-elasticsearch
           ports:
             - containerPort: 9300
@@ -664,7 +660,7 @@ onify_namespace
 onify_secrets
 onify_elasticsearch
 onify_api
-onify_agent
+#onify_agent
 onify_app
 onify_helix
 onify_functions
