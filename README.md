@@ -1,7 +1,7 @@
 # Citizen Hub Infrastructure
 
 The script generates Kubernetes manifests from templates.
-It has some parameters documented below. It will create a namespace and all resources needed to run onify-citizen in that namespace.
+It has some parameters documented below. It will create a namespace and all resources needed to run Onify Citizen Hub in that namespace.
 
 > For more information about requirements, see [requirements](https://support.onify.co/docs/requirements).
 
@@ -23,7 +23,7 @@ It has some parameters documented below. It will create a namespace and all reso
 | `--clientCode` | Code identifier for the client | `acme` |
 | `--initialLicense` | Initial license key for the installation | `SOMELICENSE` |
 | `--adminPassword` | Password for the admin user | `password1#AAA` |
-| `--registryCredentials` | Path to the container registry credentials file | `ContainerRegistryCredentials.json` |
+| `--registryCredentials` | Path to the container registry credentials file | `registryCredentials.json` |
 | `--domain` | Domain name for the ingress | `onify.net` |
 | `--output` | Directory where YAML files will be generated | `.` (current directory) |
 
@@ -36,7 +36,7 @@ The script will automatically generate:
 The manifests in `examples/acme` were created by running the script with the following parameters:
 
 ```bash
-./onify-citizen.sh --namespace=onify-citizen-test --clientInstance=test --clientCode=acme --adminPassword="Sup3rS3cretP@ssw#rd" --registryCredentials=ContainerRegistryCredentials.json --output=./examples/acme --domain=acme.org
+./onify-citizen.sh --namespace=onify-citizen-test --clientInstance=test --clientCode=acme --adminPassword="Sup3rS3cretP@ssw#rd" --registryCredentials=registryCredentials.json --output=./examples/acme --domain=acme.org
 ```
 
 ## Provisioning
@@ -49,7 +49,7 @@ Here is how you can create Kubernetes manifest for these services;
 1. Run the script to template manifests by running:
 
 ```bash
-./onify-citizen.sh --namespace=onify-citizen-prod --clientInstance=prod --clientCode=ace --adminPassword="Sup3rS3cretP@ssw#rd" --registryCredentials=ContainerRegistryCredentials.json --output=./prod --domain=acme.com
+./onify-citizen.sh --namespace=onify-citizen-prod --clientInstance=prod --clientCode=ace --adminPassword="Sup3rS3cretP@ssw#rd" --registryCredentials=registryCredentials.json --output=./prod --domain=acme.com
 ```
 
 2. Start with creating the namespace by running:
@@ -77,7 +77,7 @@ kubectl delete -f examples/acme
 To download images, a secret is created containing the contents of the file specified by --registryCredentials.
 
 The credential is basically built on this structure:
-ContainerRegistryCredentials.json is an example.
+registryCredentials.json is an example.
 
 ```json
 {

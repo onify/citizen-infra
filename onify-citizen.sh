@@ -8,7 +8,7 @@ adminPassword="password1#AAA"
 clientSecret=$(LC_ALL=C tr -dc 'A-Za-z0-9/=' </dev/urandom | head -c 45)
 appSecret=$(LC_ALL=C tr -dc 'A-Za-z0-9/=' </dev/urandom | head -c 50)
 kubectl_action="apply"           # default value if not set
-registryCredentials="ContainerRegistryCredentials.json"           # default value if not set
+registryCredentials="registryCredentials.json"           # default value if not set
 domain="onify.net"               # default value if not set
 output_dir="."                   # default value if not set
 
