@@ -23,7 +23,7 @@ It has some parameters documented below. It will create a namespace and all reso
 | `--clientCode` | Code identifier for the client | `acme` |
 | `--initialLicense` | Initial license key for the installation | `SOMELICENSE` |
 | `--adminPassword` | Password for the admin user | `password1#AAA` |
-| `--keyfile` | Path to the container registry credentials file | `keyfile.json` |
+| `--registryCredentials` | Path to the container registry credentials file | `ContainerRegistryCredentials.json` |
 | `--domain` | Domain name for the ingress | `onify.net` |
 | `--output` | Directory where YAML files will be generated | `.` (current directory) |
 
@@ -36,7 +36,7 @@ The script will automatically generate:
 The manifests in `examples/acme` were created by running the script with the following parameters:
 
 ```bash
-./onify-citizen.sh --namespace=onify-citizen-test --clientInstance=test --clientCode=acme --adminPassword="Sup3rS3cretP@ssw#rd" --keyfile=mykeyfile.json --output=./examples/acme --domain=acme.org
+./onify-citizen.sh --namespace=onify-citizen-test --clientInstance=test --clientCode=acme --adminPassword="Sup3rS3cretP@ssw#rd" --registryCredentials=ContainerRegistryCredentials.json --output=./examples/acme --domain=acme.org
 ```
 
 ## Provisioning
@@ -49,7 +49,7 @@ Here is how you can create Kubernetes manifest for these services;
 1. Run the script to template manifests by running:
 
 ```bash
-./onify-citizen.sh --namespace=onify-citizen-prod --clientInstance=prod --clientCode=ace --adminPassword="Sup3rS3cretP@ssw#rd" --keyfile=keyfile.json --output=./prod --domain=acme.com
+./onify-citizen.sh --namespace=onify-citizen-prod --clientInstance=prod --clientCode=ace --adminPassword="Sup3rS3cretP@ssw#rd" --registryCredentials=ContainerRegistryCredentials.json --output=./prod --domain=acme.com
 ```
 
 2. Start with creating the namespace by running:
@@ -74,17 +74,19 @@ kubectl delete -f examples/acme
 
 ### Container registry
 
-To download images, a secret is created containing the contents of the file specified by --keyfile.
-Example keyfile.json:
+To download images, a secret is created containing the contents of the file specified by --registryCredentials.
+
+The credential is basically built on this structure:
+ContainerRegistryCredentials.json is an example.
 
 ```json
 {
   "auths": {
     "eu.gcr.io": {
-      "auth": "X2pzb25fa2V5OnsNCiAgInR5cGUiOiAic2VydmljZV9hY2NvdW50IiwNCiAgInByb2plY3RfaWQiOiAiYWdvb2dsZWNsb3VkcHJvamVjdCIsDQogICJwcml2YXRlX2tleV9pZCI6ICJzb21lbnVtYmVyIiwNCiAgInByaXZhdGVfa2V5IjogImFwcml2YXRla2V5IiwNCiAgImNsaWVudF9lbWFpbCI6ICJ1c2VybmFtZUBwcm9qZWN0LmlhbS5nc2VydmljZWFjY291bnQuY29tIiwNCiAgImNsaWVudF9pZCI6ICIxMjEyMTIiLA0KICAiYXV0aF91cmkiOiAiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tL28vb2F1dGgyL2F1dGgiLA0KICAidG9rZW5fdXJpIjogImh0dHBzOi8vb2F1dGgyLmdvb2dsZWFwaXMuY29tL3Rva2VuIiwNCiAgImF1dGhfcHJvdmlkZXJfeDUwOV9jZXJ0X3VybCI6ICJodHRwczovL3d3dy5nb29nbGVhcGlzLmNvbS9vYXV0aDIvdjEvY2VydHMiLA0KICAiY2xpZW50X3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20iDQogICJ1bml2ZXJzZV9kb21haW4iOiAiZ29vZ2xlYXBpcy5jb20iDQp9DQo="
+      "auth": "BASE64 ENCODED GCR.IO KEYFILE"
     },
     "ghcr.io": {
-      "auth": "c29tZXRoaW5nOnBlcnNvbmFsYWNjZXNzdG9rZW5zb21ldGhpbmcK"
+      "auth": "BASE64 ENCODED > githubuser:PAT"
     }
   }
 }
