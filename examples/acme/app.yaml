@@ -20,7 +20,6 @@ spec:
   serviceName: onify-app
   template:
     metadata:
-      creationTimestamp: null
       labels:
         app: onify-app
         task: onify-app
@@ -34,7 +33,7 @@ spec:
             - name: NODE_ENV
               value: production
             - name: ONIFY_api_admintoken
-              value: Bearer YXBwOldMM01UaVdPVEw2dGVObVlKMmhmPUFtUFExbVZ5dGs3MDZVNUQvcU5TMi9hb3NNaW9LCg==
+              value: Bearer YXBwOjVKZ0lxZTZMUjNtckFwc2RWQmlWOVdaVGpKMnBPSlFMVEtVOD1OTUhBeXBzYnJqUW9MCg==
             - name: ONIFY_api_externalUrl
               value: /api/v2
             - name: ONIFY_disableAdminEndpoints

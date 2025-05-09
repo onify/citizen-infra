@@ -34,7 +34,7 @@ spec:
             - name: ONIFY_adminUser_username
               value: admin 
             - name: ONIFY_apiTokens_app_secret
-              value: WL3MTiWOTL6teNmYJ2hf=AmPQ1mVytk706U5D/qNS2/aosMioK
+              value: 5JgIqe6LR3mrApsdVBiV9WZTjJ2pOJQLTKU8=NMHAypsbrjQoL
             - name: ONIFY_autoinstall
               value: "true"
             - name: ONIFY_client_code
@@ -42,7 +42,7 @@ spec:
             - name: ONIFY_client_instance
               value: test
             - name: ONIFY_client_secret
-              value: 335iKCl8v2wGG3qvSMDHtpLB=IueG0bztaJE73QkfUTxk
+              value: FpgcJsQXq2q5U29i8EzGTpOTaUP25q0Yd8GPwrQtdMe6L
             - name: ONIFY_db_indexPrefix
               value: onify
             - name: ONIFY_initialLicense
@@ -59,8 +59,6 @@ spec:
               value: "300"
             - name: ONIFY_db_elasticsearch_host
               value: http://onify-elasticsearch:9200
-            - name: ONIFY_websockets_agent_url
-              value: ws://onify-agent:8080/hub 
           image: eu.gcr.io/onify-images/hub/api:infra-node-20
           imagePullPolicy: Always
           name: onfiy-api
