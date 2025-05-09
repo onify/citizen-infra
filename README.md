@@ -44,6 +44,8 @@ The manifests in `examples/acme` were created by running the script with the fol
 Onify Citizen Hub is based on several (micro)services; `api`, `worker`, `app`, `helix`, `functions` and `elasticsearch`. 
 Here is how you can create Kubernetes manifest for these services;
 
+> NOTE: For provisioning Onify Helix (helix), please see section below for more details.
+
 1. Run the script to template manifests by running:
 
 ```bash
@@ -86,31 +88,6 @@ Example keyfile.json:
     }
   }
 }
-```
-
-# Helix
-
-## Onify gchr image
-If you would like to use Helix from onify´s ghcr.io repository, you need a personal access token from Onify to be able to pull it.
-The credentials looks like this:
-```
-username:personalaccestoken
-```
-This information need to be base64 encoded and added to the container registry secret.
-Example:
-```
-    "ghcr.io": {
-      "auth": "c29tZXRoaW5nOnBlcnNvbmFsYWNjZXNzdG9rZW5zb21ldGhpbmcK"
-    }
-```
-This example makes it possible to pull the image `ghcr.io/onify/helix:latest` from the repository.
-
-You can also build you own image and push it to your own repository and use that instead.
-This is an example of credentials for a private repository:
-```
-    "privatecontainerregistry.local": {
-      "auth": "c29tZXRoaW5nOnBlcnNvbmFsYWNjZXNzdG9rZW5zb21ldGhpbmcK"
-    }
 ```
 
 ### Access / Ingress
@@ -269,3 +246,53 @@ curl -s \
 ```
 
 This could be executed from the elastic pod.
+
+## Onify Helix
+
+Onify Helix is a custom image unlike the rest of the other services (api, app, functions, elasticsearch). This requires it´s own Git repo, container registry and CI/CD pipeline.
+We recommend using GitHub. We have ready made GitHub Action Workflows for Onify Helix. But you can also run your own...
+
+Here is an example how to build latest in GitHub and use GitHub as container registry:
+
+```yaml
+name: Build latest
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      #CHECKOUT ACTION CLONES THE REPOSITORY
+      - uses: actions/checkout@v3
+
+      #SETUP VARIABLES
+      - name: Setup variables
+        id: variables
+        run: |-
+          echo "repo=${{ github.repository }}" | tr '[:upper:]' '[:lower:]' >> $GITHUB_OUTPUT
+
+      #LOGIN TO GHCR REGISTRY SO WE CAN PUSH THE IMAGE. USES THE DEFAULT GITHUB_TOKEN VARIABLE THAT WORKFLOW ALWAYS HAVE ACCESS TO
+      - name: Log in to the Container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      #BUILD AND PUSH THE LATEST IMAGE
+      - name: Build and push latest
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ steps.variables.outputs.repo }}:latest
+          build-args: ONIFY_GITHUB_ACCESS_TOKEN=${{ secrets.ONIFY_GITHUB_ACCESS_TOKEN }}
+```
+
+> NOTE: The `ONIFY_GITHUB_ACCESS_TOKEN` is something you will get from Onify.
+
+You need to replace the image (eg. `ghcr.io/onify/helix-app-lab:latest`) in `helix.yaml` with your own image and make sure you have access to that. 
