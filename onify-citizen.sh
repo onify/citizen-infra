@@ -8,7 +8,7 @@ adminPassword="password1#AAA"
 clientSecret=$(LC_ALL=C tr -dc 'A-Za-z0-9/=' </dev/urandom | head -c 45)
 appSecret=$(LC_ALL=C tr -dc 'A-Za-z0-9/=' </dev/urandom | head -c 50)
 kubectl_action="apply"           # default value if not set
-keyfile="keyfile.json"           # default value if not set
+registryCredentials="ContainerRegistryCredentials.json"           # default value if not set
 domain="onify.net"               # default value if not set
 output_dir="."                   # default value if not set
 
@@ -26,8 +26,8 @@ for arg in "$@"; do
     --initialLicense=*)
       initialLicense="${arg#*=}"
       ;;
-    --keyfile=*)
-      keyfile="${arg#*=}"
+    --registryCredentials=*)
+      registryCredentials="${arg#*=}"
       ;;
     --domain=*)
       domain="${arg#*=}"
@@ -41,10 +41,10 @@ for arg in "$@"; do
   esac
 done
 
-if [[ -n "$keyfile" && -f "$keyfile" ]]; then
-  keyfile_content=$(<"$keyfile")
+if [[ -n "$registryCredentials" && -f "$registryCredentials" ]]; then
+  registryCredentials_content=$(<"$registryCredentials")
 else
-  keyfile_content=""
+  registryCredentials_content=""
 fi
 
 # Function to handle kubectl or template output
@@ -74,7 +74,7 @@ onify_secrets() {
   local yaml_content=$(cat <<EOF
 apiVersion: v1
 data:
-  .dockerconfigjson: $(echo "${keyfile_content}" | base64)
+  .dockerconfigjson: $(echo "${registryCredentials_content}" | base64)
 kind: Secret
 metadata:
   name: onify-regcred
