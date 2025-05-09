@@ -88,6 +88,31 @@ Example keyfile.json:
 }
 ```
 
+# Helix
+
+## Onify gchr image
+If you would like to use Helix from onify´s ghcr.io repository, you need a personal access token from Onify to be able to pull it.
+The credentials looks like this:
+```
+username:personalaccestoken
+```
+This information need to be base64 encoded and added to the container registry secret.
+Example:
+```
+    "ghcr.io": {
+      "auth": "c29tZXRoaW5nOnBlcnNvbmFsYWNjZXNzdG9rZW5zb21ldGhpbmcK"
+    }
+```
+This example makes it possible to pull the image `ghcr.io/onify/helix:latest` from the repository.
+
+You can also build you own image and push it to your own repository and use that instead.
+This is an example of credentials for a private repository:
+```
+    "privatecontainerregistry.local": {
+      "auth": "c29tZXRoaW5nOnBlcnNvbmFsYWNjZXNzdG9rZW5zb21ldGhpbmcK"
+    }
+```
+
 ### Access / Ingress
 
 #### APP (and Helix)
