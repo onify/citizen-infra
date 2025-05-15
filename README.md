@@ -22,7 +22,7 @@ It has some parameters documented below. It will create a namespace and all reso
 | `--clientInstance` | Instance identifier for the client | `test` |
 | `--clientCode` | Code identifier for the client | `acme` |
 | `--initialLicense` | Initial license key for the installation | `SOMELICENSE` |
-| `--adminPassword` | Password for the admin user | `password1#AAA` |
+| `--adminPassword` | Password for the admin user. Needs to be a complext password with capital and lowercase letters, numbers and special characters  | `P@33w0rd543On1f7` |
 | `--registryCredentials` | Path to the container registry credentials file | `registryCredentials.json` |
 | `--domain` | Domain name for the ingress | `onify.net` |
 | `--output` | Directory where YAML files will be generated | `.` (current directory) |
@@ -119,14 +119,53 @@ https://$namespace-api.$domain
 
 ### Let's Encrypt
 
-This script does not create annotations for certificates. Here´s an example if certmanager is used in you cluster:
+We recommend certmanager for automating TLS certificates from letsencrypt.
+When certmanager is installed (using helm or similar). These manifests needs to be applied:
+
+```yaml
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    #change to your email
+    email: hello@onify.io
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          ingressClassName: nginx
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    #change to your email
+    email: hello@onify.io
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-staging
+    solvers:
+    - http01:
+        ingress:
+          ingressClassName: nginx
+}
+```
+
+
+This script does not create annotations for certificates. Here´s an annotation xample if certmanager is used in you cluster.
 
 ```yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+    cert-manager.io/cluster-issuer: letsencrypt-prod  ## -< this is the annotation for certmanager
   name: onify-citizen-ingress
   namespace: onify-citizen-test
 spec:

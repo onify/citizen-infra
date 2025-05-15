@@ -4,7 +4,7 @@ namespace="onify-citizen"        # default value if not set
 clientInstance=test             # default value if not set
 clientCode=acme                 # default value if not set
 initialLicense=SOMELICENSE       # default value if not set
-adminPassword="password1#AAA"
+adminPassword="P@33w0rd543On1f7"
 clientSecret=$(LC_ALL=C tr -dc 'A-Za-z0-9/=' </dev/urandom | head -c 45)
 appSecret=$(LC_ALL=C tr -dc 'A-Za-z0-9/=' </dev/urandom | head -c 50)
 kubectl_action="apply"           # default value if not set
@@ -178,6 +178,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
+#   cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
   name: onify-api
