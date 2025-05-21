@@ -14,6 +14,17 @@ It has some parameters documented below. It will create a namespace and all reso
 * License
 * Access to images (gcr/ghcr)
 
+## Container images
+
+The following container images are used by Citizen Hub. Image versions may vary depending on your deployment requirements:
+
+* `eu.gcr.io/onify-images/hub/api:*`
+* `eu.gcr.io/onify-images/hub/app:*`
+* `eu.gcr.io/onify-images/hub/agent-server:*` (optional, used if Onify Agent is enabled)
+* `ghcr.io/onify/helix-app:*` (default Helix image; replace with your custom image for production)
+* `ghcr.io/onify/citizen-functions:*`
+* `docker.elastic.co/elasticsearch/elasticsearch:*`
+
 ## Parameters
 
 | Parameter | Description | Default |

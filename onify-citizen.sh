@@ -314,7 +314,7 @@ spec:
         - env:
             - name: ONIFY_api_internalUrl
               value: http://onify-api:8181/api/v2
-          image: ghcr.io/onify/helix-app-lab:latest
+          image: ghcr.io/onify/helix-app:latest
           imagePullPolicy: Always
           name: onfiy-helix-app
           ports:
@@ -464,8 +464,7 @@ spec:
         - env:
             - name: NODE_ENV
               value: production
-          image: eu.gcr.io/onify-images/citizen-functions:feature-citizen-v1 
-#         image: ghcr.io/onify/citizen-functions:feature-citizen-v1
+          image: ghcr.io/onify/citizen-functions:feature-citizen-v1
           imagePullPolicy: Always
           name: onify-functions
           ports:
