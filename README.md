@@ -21,8 +21,8 @@ The following container images are used by Citizen Hub. Image versions may vary 
 * `eu.gcr.io/onify-images/hub/api:*`
 * `eu.gcr.io/onify-images/hub/app:*`
 * `eu.gcr.io/onify-images/hub/agent-server:*` (optional, used if Onify Agent is enabled)
-* `ghcr.io/onify/helix-app:*` (default Helix image; replace with your custom image for production)
-* `ghcr.io/onify/citizen-functions:*`
+* `eu.gcr.io/onify-images/helix/app:*` || `ghcr.io/onify/helix-app:*` (default Helix image; replace with your custom image for production)
+* `eu.gcr.io/onify-images/citizen-functions` || `ghcr.io/onify/citizen-functions:*`
 * `docker.elastic.co/elasticsearch/elasticsearch:*`
 
 ## Parameters
