@@ -88,7 +88,7 @@ kubectl delete -f examples/acme
 To download images, a secret is created containing the contents of the file specified by --registryCredentials.
 
 The credential is basically built on this structure:
-registryCredentials.json is an example.
+`registryCredentials.json` is an example.
 
 ```json
 {
@@ -102,6 +102,8 @@ registryCredentials.json is an example.
   }
 }
 ```
+
+> Please checkout `generate-registry-credentials.sh` how to generate `registryCredentials.json`.
 
 ### Access / Ingress
 
