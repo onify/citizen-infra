@@ -607,7 +607,7 @@ spec:
               value: onify-elasticsearch
             - name: ES_JAVA_OPTS
               value: -Xms1024m -Xmx1024m
-          image: docker.elastic.co/elasticsearch/elasticsearch:7.16.1
+          image: docker.elastic.co/elasticsearch/elasticsearch:7.17.28
           imagePullPolicy: Always
           name: onify-elasticsearch
           ports:
