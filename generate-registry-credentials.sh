@@ -1,8 +1,7 @@
 #!/bin/bash
-# filepath: /Users/robert/Code/citizen-infra/generate-registry-credentials.sh
-
-# This script generates a Docker registry credentials file (registryCredentials.json)
-# for authentication with Google Container Registry (eu.gcr.io) and GitHub Container Registry (ghcr.io)
+# This script generates a JSON file with base64 encoded credentials for Google Container Registry (GCR) and GitHub Container Registry (GHCR).
+# It reads the Google Cloud service account key file and GitHub Personal Access Token (PAT) from specified files.
+# The generated JSON file can be used for authentication with the respective registries.
 #
 # Special thanks to David Eriksson at Trollhättan stad for support with this script.
 #
