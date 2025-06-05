@@ -47,7 +47,7 @@ The script will automatically generate:
 The manifests in `examples/acme` were created by running the script with the following parameters:
 
 ```bash
-./onify-citizen.sh --namespace=onify-citizen-test --clientInstance=test --clientCode=acme --adminPassword="Sup3rS3cretP@ssw#rd" --registryCredentials=registryCredentials.json --output=./examples/acme --domain=acme.org
+./onify-citizen.sh --namespace=onify-citizen-test --clientInstance=test --clientCode=acme --adminPassword='Sup3rS3cretP@ssw#rd' --registryCredentials=registryCredentials.json --output=./examples/acme --domain=acme.org
 ```
 
 ## Provisioning
@@ -60,7 +60,7 @@ Here is how you can create Kubernetes manifest for these services;
 1. Run the script to template manifests by running:
 
 ```bash
-./onify-citizen.sh --namespace=onify-citizen-prod --clientInstance=prod --clientCode=ace --adminPassword="Sup3rS3cretP@ssw#rd" --registryCredentials=registryCredentials.json --output=./prod --domain=acme.com
+./onify-citizen.sh --namespace=onify-citizen-prod --clientInstance=prod --clientCode=ace --adminPassword='Sup3rS3cretP@ssw#rd' --registryCredentials=registryCredentials.json --output=./prod --domain=acme.com
 ```
 
 2. Start with creating the namespace by running:
