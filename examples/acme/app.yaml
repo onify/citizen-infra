@@ -33,7 +33,7 @@ spec:
             - name: NODE_ENV
               value: production
             - name: ONIFY_api_admintoken
-              value: Bearer YXBwOjVKZ0lxZTZMUjNtckFwc2RWQmlWOVdaVGpKMnBPSlFMVEtVOD1OTUhBeXBzYnJqUW9MCg==
+              value: Bearer YXBwOmJCaEs1aFZFSTlMQzJhT0Fia0hadDc0b2YxaFhHU1p1S21xM0pkc3FHOXhHekR4Ym92
             - name: ONIFY_api_externalUrl
               value: /api/v2
             - name: ONIFY_disableAdminEndpoints

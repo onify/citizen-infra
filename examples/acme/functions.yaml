@@ -23,8 +23,7 @@ spec:
         - env:
             - name: NODE_ENV
               value: production
-          image: eu.gcr.io/onify-images/citizen-functions:feature-citizen-v1 
-#         image: ghcr.io/onify/citizen-functions:feature-citizen-v1
+          image: ghcr.io/onify/citizen-functions:feature-citizen-v1
           imagePullPolicy: Always
           name: onify-functions
           ports:

@@ -23,7 +23,7 @@ spec:
         - env:
             - name: ONIFY_api_internalUrl
               value: http://onify-api:8181/api/v2
-          image: ghcr.io/onify/helix-app-lab:latest
+          image: ghcr.io/onify/helix-app:latest
           imagePullPolicy: Always
           name: onfiy-helix-app
           ports:
