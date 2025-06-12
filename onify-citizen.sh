@@ -74,7 +74,7 @@ onify_secrets() {
   local yaml_content=$(cat <<EOF
 apiVersion: v1
 data:
-  .dockerconfigjson: $(echo "${registryCredentials_content}" | base64)
+  .dockerconfigjson: $(echo -n "${registryCredentials_content}" | base64)
 kind: Secret
 metadata:
   name: onify-regcred
@@ -237,7 +237,7 @@ spec:
             - name: NODE_ENV
               value: production
             - name: ONIFY_api_admintoken
-              value: Bearer $(echo "app:${appSecret}" | base64)
+              value: Bearer $(echo -n "app:${appSecret}" | base64)
             - name: ONIFY_api_externalUrl
               value: /api/v2
             - name: ONIFY_disableAdminEndpoints
@@ -488,6 +488,7 @@ spec:
     app: onify-functions
     task: onify-functions
   type: ClusterIP
+EOF
 )
   handle_output "functions" "$yaml_content"
 }
