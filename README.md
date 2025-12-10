@@ -128,6 +128,8 @@ An ingress for the API is also created with the address:
 https://$namespace-api.$domain
 ```
 
+> NOTE: Do not route API to `/api`! This is proxied by the APP.
+ 
 ## Cert and TLS
 
 ### Let's Encrypt
