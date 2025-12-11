@@ -443,22 +443,22 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   labels:
-    app: onify-functions
-    name: onify-functions
-  name: onify-functions
+    app: hub-functions
+    name: hub-functions
+  name: hub-functions
   namespace: ${namespace}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: onify-functions
-      task: onify-functions
-  serviceName: onify-functions
+      app: hub-functions
+      task: hub-functions
+  serviceName: hub-functions
   template:
     metadata:
       labels:
-        app: onify-functions
-        task: onify-functions
+        app: hub-functions
+        task: hub-functions
     spec:
       containers:
         - env:
@@ -466,10 +466,10 @@ spec:
               value: production
           image: ghcr.io/onify/citizen-functions:feature-citizen-v1
           imagePullPolicy: Always
-          name: onify-functions
+          name: hub-functions
           ports:
             - containerPort: 8282
-              name: onify-functions
+              name: hub-functions
               protocol: TCP
       imagePullSecrets:
         - name: onify-regcred
@@ -477,16 +477,16 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: onify-functions
+  name: hub-functions
   namespace: ${namespace}
 spec:
   ports:
-    - name: onify-functions
+    - name: hub-functions
       port: 8282
       protocol: TCP
   selector:
-    app: onify-functions
-    task: onify-functions
+    app: hub-functions
+    task: hub-functions
   type: ClusterIP
 EOF
 )
