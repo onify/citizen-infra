@@ -148,7 +148,7 @@ spec:
               value: "300"
             - name: ONIFY_db_elasticsearch_host
               value: http://onify-elasticsearch:9200
-          image: eu.gcr.io/onify-images/hub/api:infra-node-20
+          image: eu.gcr.io/onify-images/hub/api:2.41.0
           imagePullPolicy: Always
           name: onfiy-api
           ports:
@@ -244,7 +244,7 @@ spec:
               value: "false"
             - name: ONIFY_api_internalUrl
               value: http://onify-api:8181/api/v2
-          image: eu.gcr.io/onify-images/hub/app:2.20-rc1
+          image: eu.gcr.io/onify-images/hub/app:2.20.0
           imagePullPolicy: Always
           name: onfiy-api
           ports:
@@ -314,7 +314,7 @@ spec:
         - env:
             - name: ONIFY_api_internalUrl
               value: http://onify-api:8181/api/v2
-          image: ghcr.io/onify/helix-app:latest
+          image: eu.gcr.io/onify-images/citizen/app:v2.50-rc1
           imagePullPolicy: Always
           name: onfiy-helix-app
           ports:
@@ -464,7 +464,7 @@ spec:
         - env:
             - name: NODE_ENV
               value: production
-          image: ghcr.io/onify/citizen-functions:feature-citizen-v1
+          image: eu.gcr.io/onify-images/citizen-functions:v2.50-rc1
           imagePullPolicy: Always
           name: hub-functions
           ports:
@@ -564,7 +564,7 @@ spec:
               value: "300"
             - name: ONIFY_db_elasticsearch_host
               value: http://onify-elasticsearch:9200
-          image: eu.gcr.io/onify-images/hub/api:infra-node-20
+          image: eu.gcr.io/onify-images/hub/api:2.41.0
           imagePullPolicy: Always
           name: onify-worker
           ports:
