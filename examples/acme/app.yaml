@@ -33,14 +33,14 @@ spec:
             - name: NODE_ENV
               value: production
             - name: ONIFY_api_admintoken
-              value: Bearer YXBwOmJCaEs1aFZFSTlMQzJhT0Fia0hadDc0b2YxaFhHU1p1S21xM0pkc3FHOXhHekR4Ym92
+              value: Bearer YXBwOjF5MGlzcS9kaWNKR3N2S0EvblRabGVkSlp1cGx6ZFlGM2N4RDdzRUlid1Y2RTFxNUhh
             - name: ONIFY_api_externalUrl
               value: /api/v2
             - name: ONIFY_disableAdminEndpoints
               value: "false"
             - name: ONIFY_api_internalUrl
               value: http://onify-api:8181/api/v2
-          image: eu.gcr.io/onify-images/hub/app:2.20-rc1
+          image: eu.gcr.io/onify-images/hub/app:2.20.0
           imagePullPolicy: Always
           name: onfiy-api
           ports:
