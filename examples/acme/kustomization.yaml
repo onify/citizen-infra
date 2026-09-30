@@ -16,9 +16,9 @@ images:
   - name: onify-gateway-image
     newName: REPLACE_WITH_GATEWAY_IMAGE
     newTag: REPLACE_WITH_GATEWAY_TAG
-  # For migration, retain the running Elasticsearch version with an override:
+  # Set the Elasticsearch version for this installation:
   # - name: docker.elastic.co/elasticsearch/elasticsearch
-  #   newTag: 7.17.28
+  #   newTag: 7.17.29
 configMapGenerator:
   - name: onify-api-config
     envs:

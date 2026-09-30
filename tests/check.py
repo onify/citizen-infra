@@ -99,8 +99,8 @@ def check(path):
             "App must proxy browser API requests to the internal API.")
     require("secretRef:" not in app, "API credentials must not be passed to the app.")
     app_ingress = objects["Ingress", "onify-app"]
-    require("path: /\n" in app_ingress and "number: 4000" in app_ingress
-            and "/helix" not in app_ingress, "App Ingress must serve / on port 4000.")
+    require(re.findall(r"(?m)^\s+path: (.+)$", app_ingress) == ["/"]
+            and "number: 4000" in app_ingress, "App Ingress must serve / on port 4000.")
     ingresses = "\n".join(doc for (kind, _), doc in objects.items() if kind == "Ingress")
     require("onify-gateway" not in ingresses and "onify-elasticsearch" not in ingresses,
             "Gateway and Elasticsearch must stay internal.")

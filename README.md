@@ -1,10 +1,9 @@
 # Onify Citizen Infrastructure
 
-Kubernetes manifests for installing Onify Citizen on an existing cluster.
+Kubernetes manifests for installing Onify Citizen.
 [Kustomize](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/)
 is built into `kubectl`; it combines a shared base with installation-specific
-configuration. The [Onify Citizen Terraform module](https://github.com/onify/terraform/tree/a5bab28a5aa8ca09e35d2de3d1c31d60de2b4ffc/modules/onify-citizen)
-is the reference for the components, ports and frontend proxy settings.
+configuration.
 
 ## How Kustomize works
 
@@ -45,9 +44,8 @@ Gateway and Elasticsearch have internal ClusterIP Services.
 - `.github/workflows/validate.yaml`: the same checks plus strict Kubernetes
   schema validation on pushes and pull requests.
 
-The example keeps the previous `onify-citizen-test` namespace and existing API,
-worker, app and Elasticsearch names. For a new installation, choose a namespace
-such as `acme-prod`. Each installation needs its own configuration and secrets.
+The ACME example uses the `onify-citizen-test` namespace. Set the namespace,
+configuration and secrets for each installation, for example `acme-prod`.
 
 ## Requirements
 
@@ -59,7 +57,7 @@ such as `acme-prod`. Each installation needs its own configuration and secrets.
 - For the example TLS configuration: cert-manager and a `letsencrypt-prod`
   ClusterIssuer, plus DNS records pointing to the Ingress controller.
 
-The example uses the `nginx` Ingress class to match the existing configuration.
+The example uses the `nginx` Ingress class.
 Adapt the class and controller-specific annotations to your cluster. For a
 custom TLS certificate, create a `kubernetes.io/tls` Secret in the installation
 namespace, set its name in `ingress.yaml`, and remove the cert-manager annotation.
@@ -87,15 +85,14 @@ Edit these files before applying:
 | `ingress.yaml` | App/API hostnames, TLS hosts, certificate Secrets and Ingress class |
 | `storage.yaml` | Disk size and, if needed, `storageClassName` |
 
-Image tags and the Gateway image repository are explicit placeholders because
-the reference module requires them as inputs. The app image must be built to
-serve `/`; the previous image built for `/helix` is not a drop-in replacement.
+Replace the image placeholders in `kustomization.yaml` with approved
+repositories and version tags. The Citizen app image must serve `/` on port 4000.
 API and worker use the same image. Additional app or Gateway environment
 settings can be supplied with a Kustomize patch to their container's `env`.
 
 Environment files contain literal `KEY=value` lines, with no shell expansion.
 Keep secret values on a single line and do not wrap them in shell quotes.
-For a new installation, generate the app-token and client secrets once, for
+Generate the app-token and client secrets once, for
 example with `openssl rand -hex 32`, and save them in `secrets.env`.
 Reuse these values on later deployments.
 
@@ -191,11 +188,11 @@ Copy them into the installation:
 cp examples/elasticsearch/backup-*.yaml deployments/acme-prod/
 ```
 
-Add these entries to the installation's `kustomization.yaml`:
+Add the backup manifest and patch to the installation's `kustomization.yaml`:
 
 ```yaml
 resources:
-  # Keep the existing resources, then add:
+  # Additional resource:
   - backup-storage.yaml
 patches:
   - path: backup-patch.yaml
@@ -214,37 +211,6 @@ kubectl --context "$ONIFY_CONTEXT" -n "$ONIFY_NAMESPACE" exec onify-elasticsearc
 Registering the repository does not create or schedule snapshots. Configure
 Elasticsearch Snapshot Lifecycle Management for scheduled backups and verify
 that a snapshot can be restored.
-
-## Migrate an existing installation
-
-Plan a cutover before applying these manifests to a running installation.
-
-1. Preserve the namespace, `ONIFY_client_code`, `ONIFY_client_instance`,
-   `ONIFY_db_indexPrefix`, license and all existing authentication values.
-   Copy the installation's other API/worker settings into `config.env` or
-   `secrets.env` as appropriate.
-2. Take an Elasticsearch snapshot and verify the data restore procedure.
-   The old generator did not mount persistent storage by default. Mounting a
-   new empty PVC does **not** move data from an existing pod. For ephemeral
-   data, snapshot before any Elasticsearch restart, restore to a separate
-   persistent Elasticsearch instance, and validate it before cutover.
-   For an existing persistent installation, reuse its actual PVC via a
-   workload patch and remove `storage.yaml` from the resource list if that
-   claim is managed elsewhere. Keep its image version during the migration.
-3. Stop the old worker during cutover. Replace the old frontend route:
-   remove the `onify-helix` Ingress before enabling the new app Ingress for
-   the same hostname. The new app serves `/` on port 4000.
-4. Review `kubectl diff -k` and perform the server dry run. Keep any
-   previously used node placement, resource settings and required mounts
-   through workload patches. Apply only after the data migration is ready.
-5. After the new app, API, worker and Gateway work, remove the obsolete
-   `onify-helix`, `hub-functions` and `onify-agent` workloads and their
-   Services/Ingresses, where present. Update callers of the old endpoints.
-
-`kubectl apply -k` does not remove resources omitted from the new manifests.
-StatefulSet selectors and `serviceName` keep their existing values in the base;
-check these against the running installation. Other immutable fields require
-a planned replacement. Preserve customer storage and the namespace throughout.
 
 ## Verify changes locally
 
