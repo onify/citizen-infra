@@ -25,6 +25,7 @@ spec:
           ports:
             - name: api
               containerPort: 8181
+          # API and worker load all keys from the installation's config.env and secrets.env.
           envFrom:
             - configMapRef:
                 name: onify-api-config

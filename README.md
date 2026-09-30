@@ -12,6 +12,17 @@ An **overlay** is an installation directory such as `examples/acme/`: its
 `kustomization.yaml` selects the base, images, namespace and configuration.
 Kustomize combines these files locally into ordinary Kubernetes manifests.
 
+Start with `kubernetes/onify-citizen.yaml` to see the workloads, Services and
+container settings. API and worker load their environment variables through
+`envFrom`: every key in the referenced ConfigMap and Secret becomes a container
+environment variable. The values come from the installation's `config.env` and
+`secrets.env` files.
+
+`examples/acme/` is an input template with sample client settings and hostnames,
+plus placeholders for images and credentials. Copy and complete it for your
+installation. The combined output contains the workloads, Services, Ingresses,
+storage claims, ConfigMaps and Secret for that installation.
+
 Use `kubectl apply -k` to render and apply an overlay in one command. If you
 need a standalone YAML file for another deployment tool, render it first:
 
@@ -101,6 +112,57 @@ Rendering unchanged inputs produces unchanged names; changing configuration or
 secrets updates the pod references and rolls out the affected workloads.
 Local installation directories, secret files and registry credentials are
 excluded from Git.
+
+## Environment variables
+
+API and worker both receive these 15 variables from `config.env`. The values
+shown are the installation template's defaults or examples; set the client and
+administrator details for your installation.
+
+| Variable | Default or example value |
+|---|---|
+| `NODE_ENV` | `production` |
+| `ENV_PREFIX` | `ONIFY_` |
+| `INTERPRET_CHAR_AS_DOT` | `_` |
+| `ONIFY_client_code` | `acme` |
+| `ONIFY_client_instance` | `test` |
+| `ONIFY_db_indexPrefix` | `onify` |
+| `ONIFY_db_elasticsearch_host` | `http://onify-elasticsearch:9200` |
+| `ONIFY_adminUser_username` | `admin` |
+| `ONIFY_adminUser_email` | `admin@onify.local` |
+| `ONIFY_autoinstall` | `true` |
+| `ONIFY_resources_baseDir` | `/usr/share/onify/resources` |
+| `ONIFY_resources_tempDir` | `/usr/share/onify/temp_resources` |
+| `ONIFY_logging_elasticFlushInterval` | `500` |
+| `ONIFY_logging_log` | `stdout,elastic` |
+| `ONIFY_worker_cleanupInterval` | `300` |
+
+They also receive these four variables from `secrets.env`, giving each container
+19 configured environment variables. Fill in all four values.
+
+| Variable | Value to supply |
+|---|---|
+| `ONIFY_initialLicense` | Client license |
+| `ONIFY_adminUser_password` | Initial administrator password |
+| `ONIFY_apiTokens_app_secret` | App-token secret |
+| `ONIFY_client_secret` | Client secret |
+
+Additional API/worker variables can be added to the corresponding environment
+file; `envFrom` includes every key. Keep credentials in `secrets.env`.
+
+The other containers have the following environment settings:
+
+| Container | Variable | Value | Configured in |
+|---|---|---|---|
+| App | `ONIFY_API_URL_INTERNAL` | `http://onify-api:8181` | `kubernetes/onify-citizen.yaml` |
+| Gateway | `NODE_ENV` | `production` | `kubernetes/onify-citizen.yaml` |
+| Gateway | `PORT` | `8686` | `kubernetes/onify-citizen.yaml` |
+| Elasticsearch | `discovery.type` | `single-node` | `kubernetes/onify-citizen.yaml` |
+| Elasticsearch | `cluster.name` | `onify-elasticsearch` | `kubernetes/onify-citizen.yaml` |
+| Elasticsearch | `ES_JAVA_OPTS` | `-Xms1024m -Xmx1024m` | Installation's `kustomization.yaml` |
+
+The optional backup patch adds `path.repo=/usr/share/elasticsearch/backup` to
+Elasticsearch. See [Storage and backups](#storage-and-backups).
 
 ## Install
 
