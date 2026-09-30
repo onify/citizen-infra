@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: onify-elasticsearch
+spec:
+  template:
+    spec:
+      containers:
+        - name: onify-elasticsearch
+          env:
+            - name: path.repo
+              value: /usr/share/elasticsearch/backup
+          volumeMounts:
+            - name: backup
+              mountPath: /usr/share/elasticsearch/backup
+      volumes:
+        - name: backup
+          persistentVolumeClaim:
+            claimName: onify-elasticsearch-backup

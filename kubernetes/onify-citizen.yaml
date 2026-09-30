@@ -1,0 +1,240 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: onify-api
+spec:
+  serviceName: onify-api
+  replicas: 1
+  selector:
+    matchLabels:
+      app: onify-api
+      task: onify-api
+  template:
+    metadata:
+      labels:
+        app: onify-api
+        task: onify-api
+    spec:
+      automountServiceAccountToken: false
+      imagePullSecrets:
+        - name: onify-regcred
+      containers:
+        - name: onify-api
+          image: onify-api-image
+          imagePullPolicy: Always
+          ports:
+            - name: api
+              containerPort: 8181
+          envFrom:
+            - configMapRef:
+                name: onify-api-config
+            - secretRef:
+                name: onify-api-secrets
+          readinessProbe:
+            tcpSocket:
+              port: api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: onify-api
+spec:
+  type: ClusterIP
+  selector:
+    app: onify-api
+    task: onify-api
+  ports:
+    - name: api
+      port: 8181
+      targetPort: api
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: onify-worker
+spec:
+  serviceName: onify-worker
+  replicas: 1
+  selector:
+    matchLabels:
+      app: onify-worker
+      task: onify-worker
+  template:
+    metadata:
+      labels:
+        app: onify-worker
+        task: onify-worker
+    spec:
+      automountServiceAccountToken: false
+      imagePullSecrets:
+        - name: onify-regcred
+      containers:
+        - name: onify-worker
+          image: onify-api-image
+          imagePullPolicy: Always
+          args:
+            - worker
+          envFrom:
+            - configMapRef:
+                name: onify-api-config
+            - secretRef:
+                name: onify-api-secrets
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: onify-app
+spec:
+  serviceName: onify-app
+  replicas: 1
+  selector:
+    matchLabels:
+      app: onify-app
+      task: onify-app
+  template:
+    metadata:
+      labels:
+        app: onify-app
+        task: onify-app
+    spec:
+      automountServiceAccountToken: false
+      imagePullSecrets:
+        - name: onify-regcred
+      containers:
+        - name: onify-app
+          image: onify-app-image
+          imagePullPolicy: Always
+          ports:
+            - name: app
+              containerPort: 4000
+          env:
+            - name: ONIFY_API_URL_INTERNAL
+              value: http://onify-api:8181
+          readinessProbe:
+            tcpSocket:
+              port: app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: onify-app
+spec:
+  type: ClusterIP
+  selector:
+    app: onify-app
+    task: onify-app
+  ports:
+    - name: app
+      port: 4000
+      targetPort: app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: onify-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: onify-gateway
+  template:
+    metadata:
+      labels:
+        app: onify-gateway
+    spec:
+      automountServiceAccountToken: false
+      imagePullSecrets:
+        - name: onify-regcred
+      containers:
+        - name: gateway
+          image: onify-gateway-image
+          imagePullPolicy: Always
+          ports:
+            - name: gateway
+              containerPort: 8686
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "8686"
+          readinessProbe:
+            tcpSocket:
+              port: gateway
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: onify-gateway
+spec:
+  type: ClusterIP
+  selector:
+    app: onify-gateway
+  ports:
+    - name: gateway
+      port: 8686
+      targetPort: gateway
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: onify-elasticsearch
+spec:
+  serviceName: onify-elasticsearch
+  replicas: 1
+  selector:
+    matchLabels:
+      app: onify-elasticsearch
+  template:
+    metadata:
+      labels:
+        app: onify-elasticsearch
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 2000
+        runAsNonRoot: true
+        runAsUser: 1000
+      terminationGracePeriodSeconds: 300
+      containers:
+        - name: onify-elasticsearch
+          image: docker.elastic.co/elasticsearch/elasticsearch:7.17.29
+          imagePullPolicy: Always
+          ports:
+            - name: client
+              containerPort: 9200
+            - name: nodes
+              containerPort: 9300
+          env:
+            - name: discovery.type
+              value: single-node
+            - name: cluster.name
+              value: onify-elasticsearch
+          envFrom:
+            - configMapRef:
+                name: onify-elasticsearch-config
+          volumeMounts:
+            - name: data
+              mountPath: /usr/share/elasticsearch/data
+          readinessProbe:
+            tcpSocket:
+              port: client
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: onify-elasticsearch-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: onify-elasticsearch
+spec:
+  type: ClusterIP
+  selector:
+    app: onify-elasticsearch
+  ports:
+    - name: client
+      port: 9200
+      targetPort: client
+    - name: nodes
+      port: 9300
+      targetPort: nodes

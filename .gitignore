@@ -1,0 +1,6 @@
+registryCredentials.json
+keyfile.json
+github-pat.txt
+secrets.env
+/deployments/
+/rendered*.yaml

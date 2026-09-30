@@ -1,0 +1,39 @@
+name: Validate Kubernetes manifests
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Install validation tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 \
+            https://dl.k8s.io/release/v1.32.4/bin/linux/amd64/kubectl \
+            --output "$RUNNER_TEMP/kubectl"
+          curl --fail --silent --show-error --location --retry 3 \
+            https://dl.k8s.io/release/v1.32.4/bin/linux/amd64/kubectl.sha256 \
+            --output "$RUNNER_TEMP/kubectl.sha256"
+          echo "$(cat "$RUNNER_TEMP/kubectl.sha256")  $RUNNER_TEMP/kubectl" | sha256sum --check
+          curl --fail --silent --show-error --location --retry 3 \
+            https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz \
+            --output "$RUNNER_TEMP/kubeconform.tar.gz"
+          echo "9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883  $RUNNER_TEMP/kubeconform.tar.gz" | sha256sum --check
+          tar -xzf "$RUNNER_TEMP/kubeconform.tar.gz" -C "$RUNNER_TEMP" kubeconform
+          chmod +x "$RUNNER_TEMP/kubectl" "$RUNNER_TEMP/kubeconform"
+          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+
+      - name: Check rendering and Kubernetes schemas
+        run: python3 tests/check.py --schema

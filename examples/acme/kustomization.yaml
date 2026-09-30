@@ -1,0 +1,32 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: onify-citizen-test
+resources:
+  - ../../kubernetes
+  - namespace.yaml
+  - ingress.yaml
+  - storage.yaml
+images:
+  - name: onify-api-image
+    newName: eu.gcr.io/onify-images/hub/api
+    newTag: REPLACE_WITH_API_TAG
+  - name: onify-app-image
+    newName: eu.gcr.io/onify-images/citizen/app
+    newTag: REPLACE_WITH_ROOT_APP_TAG
+  - name: onify-gateway-image
+    newName: REPLACE_WITH_GATEWAY_IMAGE
+    newTag: REPLACE_WITH_GATEWAY_TAG
+  # For migration, retain the running Elasticsearch version with an override:
+  # - name: docker.elastic.co/elasticsearch/elasticsearch
+  #   newTag: 7.17.28
+configMapGenerator:
+  - name: onify-api-config
+    envs:
+      - config.env
+  - name: onify-elasticsearch-config
+    literals:
+      - ES_JAVA_OPTS=-Xms1024m -Xmx1024m
+secretGenerator:
+  - name: onify-api-secrets
+    envs:
+      - secrets.env
