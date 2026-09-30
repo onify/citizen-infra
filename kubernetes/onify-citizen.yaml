@@ -155,7 +155,13 @@ spec:
               containerPort: 8686
           env:
             - name: NODE_ENV
-              value: production
+              value: development
+            - name: GATEWAY_TENANCY
+              value: single
+            - name: GATEWAY_FAKE_MODE
+              value: "true"
+            - name: GATEWAY_AUTH
+              value: none
             - name: PORT
               value: "8686"
           readinessProbe:

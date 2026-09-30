@@ -155,11 +155,40 @@ The other containers have the following environment settings:
 | Container | Variable | Value | Configured in |
 |---|---|---|---|
 | App | `ONIFY_API_URL_INTERNAL` | `http://onify-api:8181` | `kubernetes/onify-citizen.yaml` |
-| Gateway | `NODE_ENV` | `production` | `kubernetes/onify-citizen.yaml` |
+| Gateway | `NODE_ENV` | `development` | `kubernetes/onify-citizen.yaml` |
+| Gateway | `GATEWAY_TENANCY` | `single` | `kubernetes/onify-citizen.yaml` |
+| Gateway | `GATEWAY_FAKE_MODE` | `true` | `kubernetes/onify-citizen.yaml` |
+| Gateway | `GATEWAY_AUTH` | `none` | `kubernetes/onify-citizen.yaml` |
 | Gateway | `PORT` | `8686` | `kubernetes/onify-citizen.yaml` |
 | Elasticsearch | `discovery.type` | `single-node` | `kubernetes/onify-citizen.yaml` |
 | Elasticsearch | `cluster.name` | `onify-elasticsearch` | `kubernetes/onify-citizen.yaml` |
 | Elasticsearch | `ES_JAVA_OPTS` | `-Xms1024m -Xmx1024m` | Installation's `kustomization.yaml` |
+
+Gateway's values are defaults in the shared base. Override them per environment
+in the installation's `kustomization.yaml`. For example:
+
+```yaml
+patches:
+  - patch: |-
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: onify-gateway
+      spec:
+        template:
+          spec:
+            containers:
+              - name: gateway
+                env:
+                  - name: NODE_ENV
+                    value: production
+                  - name: GATEWAY_FAKE_MODE
+                    value: "false"
+```
+
+Use the same format to override `GATEWAY_TENANCY` and `GATEWAY_AUTH`.
+Kubernetes environment values are strings, so quote boolean values such as
+`"true"` and `"false"`.
 
 The optional backup patch adds `path.repo=/usr/share/elasticsearch/backup` to
 Elasticsearch. See [Storage and backups](#storage-and-backups).
