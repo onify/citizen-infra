@@ -18,69 +18,52 @@ account on first start. Keep the default Gateway settings for this first setup.
   For other cluster settings, see [configuration](docs/configuration.md#cluster-settings).
 - Approved API, APP and Gateway image versions, a client license,
   and a Docker registry credentials JSON file covering those images.
-- Bash 3.2+, `kubectl`, [Mike Farah yq v4](https://github.com/mikefarah/yq#install)
+- Bash 3.2+, `kubectl`, `openssl`, [Mike Farah yq v4](https://github.com/mikefarah/yq#install)
   and [jq 1.6+](https://jqlang.org/download/). On macOS: `brew install kubectl yq jq`.
 
 Run the commands from this repository's root, in the same terminal.
-The guide uses the namespace `onify-citizen-test`; it must be unused by another
-installation. To choose another name, change it in both `namespace.yaml` and
-`kustomization.yaml` in your copy.
+The commands below use the example package's `acme-test` directory and namespace.
+Use the directory printed by the script and the namespace from your package.
 
-### 1. Copy the example
+### 1. Get your customer package
+
+Place the prepared package in `customer-packages/acme-test/`. It must contain
+`customer.json` (including the license) and `registryCredentials.json`.
+If you are preparing it for a customer, follow the
+[package checklist and template](docs/customer-package.md).
+
+### 2. Prepare the installation
 
 ```bash
-mkdir -p deployments
-cp -R examples/acme deployments/acme-test
-cp deployments/acme-test/secrets.env.example deployments/acme-test/secrets.env
-cp deployments/acme-test/gateway-secrets.env.example deployments/acme-test/gateway-secrets.env
-chmod 600 deployments/acme-test/secrets.env deployments/acme-test/gateway-secrets.env
+bash scripts/prepare-installation.sh customer-packages/acme-test
 ```
 
-Use a new destination directory. Your local installation and secret files are
-excluded from Git.
+The script fills in the installation files, generates any empty password/secret
+fields, preserves supplied values, and runs preflight. It reports the resulting
+directory and refuses to overwrite an existing installation. Save `secrets.env` securely;
+reuse these credentials for later deployments.
 
-### 2. Fill in the installation values
-
-Edit these files in `deployments/acme-test/`:
-
-| File | What to set |
-|---|---|
-| `kustomization.yaml` | Set the API, APP and Gateway images and version tags. Replace all `REPLACE_WITH_…` placeholders. |
-| `config.env` | Set `ONIFY_client_code` to the licensed client, `ONIFY_client_instance`, and the admin username/email. Keep the internal URLs and other defaults. |
-| `secrets.env` | Fill in all four values: license, admin password, APP-token secret and client secret. |
-| `ingress.yaml` | Replace the APP/API hostnames in **both** `rules` and `tls`. |
-| `network-policy.yaml` | Confirm the Ingress controller namespace and pod labels match your cluster. |
-
-Generate each of the APP-token and client secrets with `openssl rand -hex 32`.
-Save the values in `secrets.env` and keep them for later deployments. Use literal
-`KEY=value` lines without shell quotes.
-
-Leave `gateway.env` unchanged and `gateway-secrets.env` without credentials.
-The example's storage and resource settings are starting values for this empty
-environment. See [configuration](docs/configuration.md) for adjustments.
-
-### 3. Check the configuration
+### 3. Select the cluster
 
 ```bash
-bash tests/check.sh deployments/acme-test
 kubectl config get-contexts
 ```
 
-The check must report `Installation preflight passed`. Select the intended
-context from the list and set the namespace to match your files:
+After preparation reports `Installation preflight passed`, select the intended
+context from the list and set the namespace from `customer.json`:
 
 ```bash
 ONIFY_CONTEXT=REPLACE_WITH_CONTEXT
-ONIFY_NAMESPACE=onify-citizen-test
+ONIFY_NAMESPACE=acme-test
 ```
 
 ### 4. Install
 
-Set the path to your Docker registry credentials JSON, then create the namespace
+Use the registry credentials copied into the installation to create the namespace
 and image-pull Secret:
 
 ```bash
-ONIFY_REGISTRY_FILE=/secure/path/registryCredentials.json
+ONIFY_REGISTRY_FILE=deployments/acme-test/registryCredentials.json
 kubectl --context "$ONIFY_CONTEXT" apply -f deployments/acme-test/namespace.yaml
 kubectl --context "$ONIFY_CONTEXT" -n "$ONIFY_NAMESPACE" create secret generic onify-regcred \
   --type=kubernetes.io/dockerconfigjson \
@@ -116,6 +99,7 @@ fails, start with [troubleshooting](docs/operations.md#troubleshooting).
 
 ## Next steps
 
+- [Customer package](docs/customer-package.md): the files and settings to prepare for a customer.
 - [Configuration](docs/configuration.md): images, cluster settings, variables and integrations.
 - [Operations](docs/operations.md): updates, troubleshooting and checks before customer use.
 - [Backups](docs/backups.md): snapshots, retention and restore verification.

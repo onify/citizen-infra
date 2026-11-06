@@ -43,3 +43,7 @@ jobs:
       - name: Check rendering and Kubernetes schemas
         shell: bash
         run: bash tests/check.sh --schema
+
+      - name: Check customer package preparation
+        shell: bash
+        run: bash tests/prepare-installation.sh

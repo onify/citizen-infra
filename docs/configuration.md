@@ -3,6 +3,8 @@
 [Getting started](../README.md#getting-started) covers the first empty installation.
 Use this reference when adapting it for a customer. Paths below are relative to
 the installation directory, for example `deployments/acme-test/`.
+The [package preparation script](customer-package.md) fills these files in for
+a new installation; edit the generated files for later adjustments.
 
 ## Images and environment files
 

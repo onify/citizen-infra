@@ -1,0 +1,40 @@
+{
+  "client_code": "acme",
+  "instance_code": "test",
+  "namespace": "acme-test",
+  "license": "REPLACE_WITH_CLIENT_LICENSE",
+  "admin": {
+    "username": "admin",
+    "password": ""
+  },
+  "app_secret": "",
+  "client_secret": "",
+  "images": {
+    "api": {
+      "repository": "eu.gcr.io/onify-images/hub/api",
+      "tag": "REPLACE_WITH_API_TAG"
+    },
+    "app": {
+      "repository": "eu.gcr.io/onify-images/citizen/app-root",
+      "tag": "REPLACE_WITH_APP_TAG"
+    },
+    "gateway": {
+      "repository": "eu.gcr.io/onify-images/halo-gateway",
+      "tag": "REPLACE_WITH_GATEWAY_TAG"
+    }
+  },
+  "ingress": {
+    "app_host": "REPLACE_WITH_APP_HOST",
+    "api_host": "REPLACE_WITH_API_HOST",
+    "class_name": "nginx",
+    "cluster_issuer": "letsencrypt-prod",
+    "controller_namespace": "ingress-nginx",
+    "controller_labels": {
+      "app.kubernetes.io/name": "ingress-nginx"
+    }
+  },
+  "storage": {
+    "size": "10Gi",
+    "class_name": ""
+  }
+}

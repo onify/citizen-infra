@@ -17,7 +17,7 @@ images:
     newName: eu.gcr.io/onify-images/citizen/app-root
     newTag: REPLACE_WITH_APP_TAG
   - name: onify-gateway-image
-    newName: REPLACE_WITH_GATEWAY_IMAGE
+    newName: eu.gcr.io/onify-images/halo-gateway
     newTag: REPLACE_WITH_GATEWAY_TAG
   # Set the Elasticsearch version for this installation:
   # - name: docker.elastic.co/elasticsearch/elasticsearch

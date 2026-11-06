@@ -4,4 +4,7 @@ github-pat.txt
 secrets.env
 gateway-secrets.env
 /deployments/
+/customer-packages/
+customer.json
+!examples/customer-package/customer.json
 /rendered*.yaml

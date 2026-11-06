@@ -9,6 +9,8 @@ This page explains the repository and checks for changes to it.
 |---|---|
 | [kubernetes/](../kubernetes/) | Shared workloads and Services. |
 | [examples/acme/](../examples/acme/) | Installation template: namespace, images, configuration, ingress, storage and resource/network patches. |
+| [examples/customer-package/](../examples/customer-package/) | Customer package template: settings, license and registry credentials. |
+| [scripts/prepare-installation.sh](../scripts/prepare-installation.sh) | Prepares a new installation and generates its credentials. |
 | [examples/elasticsearch/](../examples/elasticsearch/) | Optional backup volume, snapshot schedule and retention. |
 | [tests/check.sh](../tests/check.sh) | Installation preflight; runs `self-check.sh` when called without a directory. |
 | [.github/workflows/validate.yaml](../.github/workflows/validate.yaml) | Rendering and strict schema validation on pushes and pull requests. |
@@ -53,6 +55,7 @@ Use the tools listed in [Getting started](../README.md#before-you-start):
 
 ```bash
 bash tests/check.sh
+bash tests/prepare-installation.sh
 ```
 
 The self-check uses temporary test credentials and covers rendering, all five
@@ -61,6 +64,10 @@ validation and the backup patch. It also checks configuration/secret rollouts,
 Gateway authentication, literal secret values, duplicate keys and Windows line
 endings. Environment files are read as data, never executed. Temporary files
 are private and removed on exit; no cluster connection is made.
+The package checks cover generated settings/credentials, file permissions,
+invalid input, registry coverage, cleanup and protection against overwriting an
+existing installation. They also verify that supplied credentials are preserved
+and empty fields are generated independently. CI runs both suites.
 
 For strict Kubernetes JSON schema validation, install
 [kubeconform](https://github.com/yannh/kubeconform#installation):
