@@ -154,16 +154,23 @@ spec:
             - name: gateway
               containerPort: 8686
           env:
-            - name: NODE_ENV
-              value: development
-            - name: GATEWAY_TENANCY
-              value: single
-            - name: GATEWAY_FAKE_MODE
-              value: "true"
-            - name: GATEWAY_AUTH
-              value: none
             - name: PORT
               value: "8686"
+            - name: GATEWAY_HALO_API_CLIENT_CODE
+              valueFrom:
+                configMapKeyRef:
+                  name: onify-api-config
+                  key: ONIFY_client_code
+            - name: GATEWAY_HALO_API_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: onify-api-secrets
+                  key: ONIFY_client_secret
+          envFrom:
+            - configMapRef:
+                name: onify-gateway-config
+            - secretRef:
+                name: onify-gateway-secrets
           readinessProbe:
             tcpSocket:
               port: gateway

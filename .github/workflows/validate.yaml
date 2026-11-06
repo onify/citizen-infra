@@ -32,8 +32,14 @@ jobs:
             --output "$RUNNER_TEMP/kubeconform.tar.gz"
           echo "9bc2bffbf71f261128533edaf912153948b7ff238f9a531ae6d34466ec287883  $RUNNER_TEMP/kubeconform.tar.gz" | sha256sum --check
           tar -xzf "$RUNNER_TEMP/kubeconform.tar.gz" -C "$RUNNER_TEMP" kubeconform
-          chmod +x "$RUNNER_TEMP/kubectl" "$RUNNER_TEMP/kubeconform"
+          curl --fail --silent --show-error --location --retry 3 \
+            https://github.com/mikefarah/yq/releases/download/v4.54.2/yq_linux_amd64 \
+            --output "$RUNNER_TEMP/yq"
+          echo "44c7759059b4910827a0059a2757b22001e59360cdecdb2ef8dedc4b6c7e9f32  $RUNNER_TEMP/yq" | sha256sum --check
+          chmod +x "$RUNNER_TEMP/kubectl" "$RUNNER_TEMP/kubeconform" "$RUNNER_TEMP/yq"
+          jq --version
           echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
 
       - name: Check rendering and Kubernetes schemas
-        run: python3 tests/check.py --schema
+        shell: bash
+        run: bash tests/check.sh --schema
