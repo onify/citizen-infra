@@ -1,0 +1,5 @@
+secrets.env
+gateway-secrets.env
+registryCredentials.json
+keyfile.json
+rendered*.yaml

@@ -1,354 +1,122 @@
-# Citizen Hub Infrastructure
+# Onify Citizen Infrastructure
 
-The script generates Kubernetes manifests from templates.
-It has some parameters documented below. It will create a namespace and all resources needed to run Onify Citizen Hub in that namespace.
+Deploy a new Onify Citizen environment on Kubernetes: API, APP, worker, Gateway
+and Elasticsearch.
 
-> For more information about requirements, see [requirements](https://support.onify.co/docs/requirements).
+## Getting started
 
-> For more informatoon about installation, see [installation](https://github.com/onify/install). 
+This guide creates an empty installation: no imported customer data and no
+enabled Gateway integrations. The API initializes its own system data and admin
+account on first start. Keep the default Gateway settings for this first setup.
 
-## Prerequisites
+### Before you start
 
-* Client code
-* Instance code
-* License
-* Access to images (gcr/ghcr)
+- A Kubernetes cluster with a default StorageClass (at least 10Gi available),
+  a network plugin that enforces NetworkPolicy, and permission to deploy.
+- The example uses `nginx` Ingress, cert-manager with a `letsencrypt-prod`
+  ClusterIssuer, and APP/API DNS names pointing to the Ingress controller.
+  For other cluster settings, see [configuration](docs/configuration.md#cluster-settings).
+- Approved API, APP and Gateway image versions, a client license,
+  and a Docker registry credentials JSON file covering those images.
+- Bash 3.2+, `kubectl`, [Mike Farah yq v4](https://github.com/mikefarah/yq#install)
+  and [jq 1.6+](https://jqlang.org/download/). On macOS: `brew install kubectl yq jq`.
 
-## Container images
+Run the commands from this repository's root, in the same terminal.
+The guide uses the namespace `onify-citizen-test`; it must be unused by another
+installation. To choose another name, change it in both `namespace.yaml` and
+`kustomization.yaml` in your copy.
 
-The following container images are used by Citizen Hub. Image versions may vary depending on your deployment requirements:
-
-* `eu.gcr.io/onify-images/hub/api:*`
-* `eu.gcr.io/onify-images/hub/app:*`
-* `eu.gcr.io/onify-images/hub/agent-server:*` (optional, used if Onify Agent is enabled)
-* `eu.gcr.io/onify-images/citizen/app:*`
-* `eu.gcr.io/onify-images/citizen/functions:*`
-* `docker.elastic.co/elasticsearch/elasticsearch:*`
-
-## Parameters
-
-| Parameter | Description | Default |
-|-----------|-------------|---------|
-| `--namespace` | Kubernetes namespace where resources will be created | `onify-citizen` |
-| `--clientInstance` | Instance identifier for the client | `test` |
-| `--clientCode` | Code identifier for the client | `acme` |
-| `--initialLicense` | Initial license key for the installation | `SOMELICENSE` |
-| `--adminPassword` | Password for the admin user. Needs to be a complext password with capital and lowercase letters, numbers and special characters  | `P@33w0rd543On1f7` |
-| `--registryCredentials` | Path to the container registry credentials file | `registryCredentials.json` |
-| `--domain` | Domain name for the ingress | `onify.net` |
-| `--output` | Directory where YAML files will be generated | `.` (current directory) |
-
-The script will automatically generate:
-- `clientSecret`: (ONIFY_client_secret) A random 45-character string for client authentication
-- `appSecret`: (ONIFY_apiTokens_app_secret) A random 50-character string for application authentication
-
-## Examples
-
-The manifests in `examples/acme` were created by running the script with the following parameters:
+### 1. Copy the example
 
 ```bash
-./onify-citizen.sh --namespace=onify-citizen-test --clientInstance=test --clientCode=acme --adminPassword='Sup3rS3cretP@ssw#rd' --registryCredentials=registryCredentials.json --output=./examples/acme --domain=acme.org
+mkdir -p deployments
+cp -R examples/acme deployments/acme-test
+cp deployments/acme-test/secrets.env.example deployments/acme-test/secrets.env
+cp deployments/acme-test/gateway-secrets.env.example deployments/acme-test/gateway-secrets.env
+chmod 600 deployments/acme-test/secrets.env deployments/acme-test/gateway-secrets.env
 ```
 
-## Provisioning
+Use a new destination directory. Your local installation and secret files are
+excluded from Git.
 
-Onify Citizen Hub is based on several (micro)services; `api`, `worker`, `app`, `helix`, `functions` and `elasticsearch`. 
-Here is how you can create Kubernetes manifest for these services;
+### 2. Fill in the installation values
 
-> NOTE: For provisioning Onify Helix (helix), please see section below for more details.
+Edit these files in `deployments/acme-test/`:
 
-1. Run the script to template manifests by running:
+| File | What to set |
+|---|---|
+| `kustomization.yaml` | Set the API, APP and Gateway images and version tags. Replace all `REPLACE_WITH_…` placeholders. |
+| `config.env` | Set `ONIFY_client_code` to the licensed client, `ONIFY_client_instance`, and the admin username/email. Keep the internal URLs and other defaults. |
+| `secrets.env` | Fill in all four values: license, admin password, APP-token secret and client secret. |
+| `ingress.yaml` | Replace the APP/API hostnames in **both** `rules` and `tls`. |
+| `network-policy.yaml` | Confirm the Ingress controller namespace and pod labels match your cluster. |
+
+Generate each of the APP-token and client secrets with `openssl rand -hex 32`.
+Save the values in `secrets.env` and keep them for later deployments. Use literal
+`KEY=value` lines without shell quotes.
+
+Leave `gateway.env` unchanged and `gateway-secrets.env` without credentials.
+The example's storage and resource settings are starting values for this empty
+environment. See [configuration](docs/configuration.md) for adjustments.
+
+### 3. Check the configuration
 
 ```bash
-./onify-citizen.sh --namespace=onify-citizen-prod --clientInstance=prod --clientCode=ace --adminPassword='Sup3rS3cretP@ssw#rd' --registryCredentials=registryCredentials.json --output=./prod --domain=acme.com
+bash tests/check.sh deployments/acme-test
+kubectl config get-contexts
 ```
 
-2. Start with creating the namespace by running:
+The check must report `Installation preflight passed`. Select the intended
+context from the list and set the namespace to match your files:
 
 ```bash
-kubectl apply -f prod/namespace.yaml
+ONIFY_CONTEXT=REPLACE_WITH_CONTEXT
+ONIFY_NAMESPACE=onify-citizen-test
 ```
 
-3. Apply the rest of the resources with:
+### 4. Install
+
+Set the path to your Docker registry credentials JSON, then create the namespace
+and image-pull Secret:
 
 ```bash
-kubectl apply -f prod/
+ONIFY_REGISTRY_FILE=/secure/path/registryCredentials.json
+kubectl --context "$ONIFY_CONTEXT" apply -f deployments/acme-test/namespace.yaml
+kubectl --context "$ONIFY_CONTEXT" -n "$ONIFY_NAMESPACE" create secret generic onify-regcred \
+  --type=kubernetes.io/dockerconfigjson \
+  --from-file=".dockerconfigjson=$ONIFY_REGISTRY_FILE" \
+  --dry-run=client -o yaml | kubectl --context "$ONIFY_CONTEXT" apply -f -
 ```
 
-### Delete
-
-To delete and start over, run:
+Check the manifests against the cluster. If that succeeds, apply them:
 
 ```bash
-kubectl delete -f examples/acme
+kubectl --context "$ONIFY_CONTEXT" apply --dry-run=server -k deployments/acme-test && \
+kubectl --context "$ONIFY_CONTEXT" apply -k deployments/acme-test
 ```
 
-### Container registry
-
-To download images, a secret is created containing the contents of the file specified by --registryCredentials.
-
-The credential is basically built on this structure:
-`registryCredentials.json` is an example.
-
-```json
-{
-  "auths": {
-    "eu.gcr.io": {
-      "auth": "BASE64 ENCODED GCR.IO KEYFILE"
-    },
-    "ghcr.io": {
-      "auth": "BASE64 ENCODED > githubuser:PAT"
-    }
-  }
-}
-```
-
-> Please checkout `generate-registry-credentials.sh` how to generate `registryCredentials.json`.
-
-### Access / Ingress
-
-#### APP (and Helix)
-
-The script will create an ingress manifest for onify-citizen with the following address:
-
-```
-https://$namespace.$domain
-```
-
-*Routes*
-
-* `/helix` > `helix`
-* `/` > `hub-app`
-
-#### API
-
-An ingress for the API is also created with the address:
-
-```
-https://$namespace-api.$domain
-```
-
-> NOTE: Do not route API to `/api`! This is proxied by the APP.
- 
-## Cert and TLS
-
-### Let's Encrypt
-
-We recommend certmanager for automating TLS certificates from letsencrypt.
-When certmanager is installed (using helm or similar). These manifests needs to be applied:
-
-```yaml
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt-prod
-spec:
-  acme:
-    #change to your email
-    email: hello@onify.io
-    server: https://acme-v02.api.letsencrypt.org/directory
-    privateKeySecretRef:
-      name: letsencrypt-prod
-    solvers:
-    - http01:
-        ingress:
-          ingressClassName: nginx
----
-apiVersion: cert-manager.io/v1
-kind: ClusterIssuer
-metadata:
-  name: letsencrypt-staging
-spec:
-  acme:
-    #change to your email
-    email: hello@onify.io
-    server: https://acme-staging-v02.api.letsencrypt.org/directory
-    privateKeySecretRef:
-      name: letsencrypt-staging
-    solvers:
-    - http01:
-        ingress:
-          ingressClassName: nginx
-}
-```
-
-
-This script does not create annotations for certificates. Here´s an annotation xample if certmanager is used in you cluster.
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod  ## -< this is the annotation for certmanager
-  name: onify-citizen-ingress
-  namespace: onify-citizen-test
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: onify-citizen-test.acme.org
-      http:
-        paths:
-          - backend:
-              service:
-                name: onify-app
-                port:
-                  number: 3000
-            path: /
-            pathType: Prefix
-          - backend:
-              service:
-                name: onify-helix
-                port:
-                  number: 4000
-            path: /helix
-            pathType: Prefix
-
-  tls:
-    - hosts:
-        - onify-citizen-test.acme.org
-      secretName: tls-secret-app-prod
-```
-
-### Custom certificate
-
-Create a secret with your custom certificate. Here's an example:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: custom-tls-secret
-  namespace: onify-citizen
-type: kubernetes.io/tls
-data:
-  # The base64 encoded certificate
-  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUZhekNDQTFPZ0F3SUJBZ0lVZXhhbXBsZWNlcnRpZmljYXRlYmFzZTY0ZGF0YQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0t
-  # The base64 encoded private key
-  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUpRd0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQ1Mwd2dna3BBZ0VBQW9JQ0FRQzlYWkFBCi0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0=
-```
-
-And here's an example of an Ingress using the custom certificate:
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: onify-citizen-ingress
-  namespace: onify-citizen
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: onify-citizen.acme.org
-      http:
-        paths:
-          - backend:
-              service:
-                name: onify-app
-                port:
-                  number: 3000
-            path: /
-            pathType: Prefix
-          - backend:
-              service:
-                name: onify-helix
-                port:
-                  number: 4000
-            path: /helix
-            pathType: Prefix
-  tls:
-    - hosts:
-        - onify-citizen.acme.org
-      secretName: custom-tls-secret
-
-```
-
-Note: The certificate and key in the example above are just placeholders. Replace them with your actual base64 encoded certificate and private key.
-
-## Onify agent
-
-Onify agent is not provisioned default by using this script. To get the script so create those manifests aswell uncomment this line:
-
-```
-#onify_agent
-```
-
-Remember to add this environmental variables to api and worker if you need agent:
-
-```
-ONIFY_websockets_agent_url = ws://onify-agent:8080/hub
-```
-
-## Elasticsearch
-
-### Persistent disk and backup
-
-This script does not create any PVC or persistent disk so if that needed you need to create a PVC and change the manifests by your own. 
-It also does not create backup manifests.
-
-In the `examples/elasticsearch/pvc_and_backup_example.yaml` theres a example of a PVC and a statefulset using PVC and also an additional volume dedicated for backups.
-To then enable backups this needs to be run against the elastic cluster:
+### 5. Wait for startup and open the APP
 
 ```bash
-curl -s \
- -X PUT \
- "http://elasticsearch.namespace.svc.cluster.local:9200/_snapshot/backup_repo" \
- -H "Content-Type: application/json" -d '{
-    "type": "fs",
-    "settings": {
-      "location": "/usr/share/elasticsearch/backup"
-    }
-  }'
+for workload in statefulset/onify-elasticsearch statefulset/onify-api \
+  statefulset/onify-worker statefulset/onify-app deployment/onify-gateway; do
+  kubectl --context "$ONIFY_CONTEXT" -n "$ONIFY_NAMESPACE" rollout status "$workload" --timeout=5m || break
+done
+kubectl --context "$ONIFY_CONTEXT" -n "$ONIFY_NAMESPACE" get pods,ingress,pvc
 ```
 
-This could be executed from the elastic pod.
+All five workloads should finish rolling out, pods should be `Running` and ready,
+and the Elasticsearch PVC should be `Bound`. Open `https://<your-app-host>/`
+using the hostname you set in `ingress.yaml`. Sign in with the admin username
+from `config.env` and password from `secrets.env`.
 
-## Onify Helix
+Confirm that the APP loads and login works. This is the starting environment;
+customer content and integrations can be added afterwards. If startup or login
+fails, start with [troubleshooting](docs/operations.md#troubleshooting).
 
-Onify Helix is a custom image unlike the rest of the other services (api, app, functions, elasticsearch). This requires it´s own Git repo, container registry and CI/CD pipeline.
-We recommend using GitHub. We have ready made GitHub Action Workflows for Onify Helix. But you can also run your own...
+## Next steps
 
-Here is an example how to build latest in GitHub and use GitHub as container registry:
-
-```yaml
-name: Build latest
-
-on:
-  push:
-    branches: [main]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      #CHECKOUT ACTION CLONES THE REPOSITORY
-      - uses: actions/checkout@v3
-
-      #SETUP VARIABLES
-      - name: Setup variables
-        id: variables
-        run: |-
-          echo "repo=${{ github.repository }}" | tr '[:upper:]' '[:lower:]' >> $GITHUB_OUTPUT
-
-      #LOGIN TO GHCR REGISTRY SO WE CAN PUSH THE IMAGE. USES THE DEFAULT GITHUB_TOKEN VARIABLE THAT WORKFLOW ALWAYS HAVE ACCESS TO
-      - name: Log in to the Container registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      #BUILD AND PUSH THE LATEST IMAGE
-      - name: Build and push latest
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/${{ steps.variables.outputs.repo }}:latest
-          build-args: ONIFY_GITHUB_ACCESS_TOKEN=${{ secrets.ONIFY_GITHUB_ACCESS_TOKEN }}
-```
-
-> NOTE: The `ONIFY_GITHUB_ACCESS_TOKEN` is something you will get from Onify.
-
-You need to replace the image (eg. `ghcr.io/onify/helix-app-lab:latest`) in `helix.yaml` with your own image and make sure you have access to that. 
+- [Configuration](docs/configuration.md): images, cluster settings, variables and integrations.
+- [Operations](docs/operations.md): updates, troubleshooting and checks before customer use.
+- [Backups](docs/backups.md): snapshots, retention and restore verification.
+- [Development](docs/development.md): repository structure, Kustomize and local tests.
