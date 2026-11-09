@@ -14,7 +14,6 @@ This page explains the repository and checks for changes to it.
 | [scripts/prepare-installation.sh](../scripts/prepare-installation.sh) | Prepares a new installation and generates its credentials. |
 | [examples/elasticsearch/](../examples/elasticsearch/) | Optional backup volume, snapshot schedule and retention. |
 | [tests/check.sh](../tests/check.sh) | Installation preflight; runs `self-check.sh` when called without a directory. |
-| [.github/workflows/validate.yaml](../.github/workflows/validate.yaml) | Rendering and strict schema validation on pushes and pull requests. |
 
 ## How Kustomize works
 
@@ -71,7 +70,7 @@ separate volumes for different client/instance pairs and an always-pull policy
 for every service.
 It needs no Docker daemon, registry credentials or license. It does not verify
 image compatibility or application startup; follow the [local guide](docker-desktop.md)
-to check startup and login with approved images. CI runs this check too.
+to check startup and login with approved images.
 
 The self-check uses temporary test credentials and covers rendering, all five
 workloads, Services, routes, storage, resource budgets, isolation rules, input
@@ -82,7 +81,7 @@ are private and removed on exit; no cluster connection is made.
 The package checks cover generated settings/credentials, file permissions,
 invalid input, registry coverage, cleanup and protection against overwriting an
 existing installation. They also verify that supplied credentials are preserved
-and empty fields are generated independently. CI runs both suites.
+and empty fields are generated independently.
 
 For strict Kubernetes JSON schema validation, install
 [kubeconform](https://github.com/yannh/kubeconform#installation):
@@ -94,8 +93,6 @@ bash tests/check.sh deployments/acme-test --schema --kubernetes-version 1.32.0
 
 The default schema version is 1.32.0; select the target cluster version when
 checking an installation. Schemas are downloaded from the public registry.
-CI uses pinned, checksum-verified kubectl, yq and kubeconform releases and the
-runner's jq. It validates the standard and backup variants with test inputs.
 
 Schema checks do not cover every server-side rule or installed admission policy.
 Use the installation guide's server dry run and [runtime checks](operations.md#before-customer-use)
