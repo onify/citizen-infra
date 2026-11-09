@@ -18,7 +18,7 @@ while IFS='=' read -r key _; do
 done < .env.example
 unset COMPOSE_PROJECT_NAME
 compose() { docker compose --project-directory "$temp" --env-file "$temp/.env" -f "$temp/compose.yaml" config "$@"; }
-sed "s/^\([^=]*\)=''\$/\1='test-only-\1-\$literal # secret'/; s/=\$/=test-only/" .env.example > .env
+sed "s/^\([^=]*\)=''/\1='test-only-\1-\$literal # secret'/; s/=\"\"/=test-only/; s/=\$/=test-only/" .env.example > .env
 compose --format json > rendered.json
 # Compose versions may escape literal dollars when exporting reusable config.
 jq -e '
