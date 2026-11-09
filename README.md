@@ -8,7 +8,7 @@ install with Docker or Kubernetes.
 Fill in `.env`, authenticate Docker with the supplied `keyfile.json`, and start
 all five services with the root [compose.yaml](compose.yaml).
 Already configured? See [start again or update images](docs/docker-desktop.md#start-again-update-or-stop).
-For a Kubernetes installation, follow the guide below.
+For Kubernetes, reuse the same `.env` and `keyfile.json` with the guide below.
 
 ## CI/CD and GitOps
 
@@ -27,6 +27,8 @@ and existing platform.
 This guide creates an empty installation: no imported customer data and no
 enabled Gateway integrations. The API initializes its own system data and admin
 account on first start. Keep the default Gateway settings for this first setup.
+Reusing `.env` carries over configuration and credentials; it does not migrate
+the Docker volume, users or application data to Kubernetes.
 
 ### Before you start
 
@@ -39,31 +41,57 @@ account on first start. Keep the default Gateway settings for this first setup.
   and the `keyfile.json` supplied by Onify with read access to those images.
 - Bash 3.2+, `kubectl`, `openssl`, [Mike Farah yq v4](https://github.com/mikefarah/yq#install)
   and [jq 1.6+](https://jqlang.org/download/). On macOS: `brew install kubectl yq jq`.
+- Docker Compose 2.23.1+ to read the shared `.env` with Docker's own syntax.
+  No running Docker engine is needed for preparation.
 
 Run the commands from this repository's root, in the same terminal.
-The commands below use the example package's `acme-test` directory and namespace.
-Use the directory printed by the script and the namespace from your package.
+The commands below use client `acme`, instance `test` and namespace `acme-test`.
+Use the directory printed by the script and your configured namespace.
 
-### 1. Get your customer package
+### 1. Reuse your .env and keyfile.json
 
-Place the prepared package in `customer-packages/acme-test/`. It must contain
-`customer.json` (including the license) and the original `keyfile.json` supplied
-by Onify. Use the same Google service-account JSON format as for Docker;
-no Docker login, Google Cloud CLI or manual conversion is needed here.
-If you are preparing it for a customer, follow the
-[package checklist and template](docs/customer-package.md).
+Keep the `.env` and Onify-supplied `keyfile.json` you used for Docker beside
+`compose.yaml`. For a fresh installation, copy [.env.example](.env.example) to
+`.env` and fill in its shared settings: the three image tags, client/instance
+codes, license, admin username/password, APP-token secret and client secret.
+
+Every `K8S_*` setting has a default, even if missing or empty. An older Docker
+`.env` works without adding a Kubernetes section. For client `acme` and instance
+`test`, the defaults are namespace `acme-test`, APP host `acme-test.example.com`
+and API host `api-acme-test.example.com`, nginx Ingress, `letsencrypt-prod`,
+10Gi storage and the cluster's default StorageClass.
+
+These are preparation defaults. Before deploying to a live cluster, set
+`K8S_APP_HOST` and `K8S_API_HOST` to real DNS names pointing to its Ingress
+controller; `example.com` is an example domain and cannot provide your live TLS
+certificate. Check the [Kubernetes settings](docs/configuration.md#kubernetes-settings-in-env)
+if your cluster uses another controller, issuer or StorageClass. `APP_PORT` only
+affects Docker; Kubernetes uses HTTPS hostnames.
+
+Keep single quotes around license/secret values, as in the Docker guide. Use
+single-line values. Shell variables override matching `.env` values in both
+flows. Protect `.env` and `keyfile.json` with `chmod 600 .env keyfile.json`.
+No Docker login or Google Cloud CLI is needed for Kubernetes preparation.
+
+The [JSON customer-package flow](docs/customer-package.md#alternative-json-customer-package)
+is still supported for installations prepared without Docker Compose.
 
 ### 2. Prepare the installation
 
 ```bash
-bash scripts/prepare-installation.sh customer-packages/acme-test
+bash scripts/prepare-installation.sh --env-file .env
 ```
 
-The script fills in the installation files, generates any empty password/secret
-fields, preserves supplied values, converts `keyfile.json` into
-`registryCredentials.json` for Kubernetes, and runs preflight. It reports the
-resulting directory and refuses to overwrite an existing installation. Save
-`secrets.env` securely; reuse these credentials for later deployments.
+The script uses the same image tags and credentials as Docker, fills in the
+Kubernetes installation files, converts `keyfile.json` into
+`registryCredentials.json`, and runs preflight. All shared credentials must be
+filled in; this path does not generate replacement passwords. The keyfile is
+read from the directory containing your `.env`.
+
+It reports `deployments/<client_code>-<client_instance>/` and refuses to overwrite
+an existing installation. Save that directory securely. Preparation creates a
+new installation; later `.env` edits are not automatically applied to it. Follow
+[Operations](docs/operations.md#apply-changes) for later changes.
 
 ### 3. Select the cluster
 
@@ -72,7 +100,7 @@ kubectl config get-contexts
 ```
 
 After preparation reports `Installation preflight passed`, select the intended
-context from the list and set the namespace from `customer.json`:
+context from the list and set the namespace from the generated `namespace.yaml`:
 
 ```bash
 ONIFY_CONTEXT=REPLACE_WITH_CONTEXT

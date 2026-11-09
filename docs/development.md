@@ -7,11 +7,12 @@ This page explains the repository and checks for changes to it.
 
 | Path | Purpose |
 |---|---|
-| [compose.yaml](../compose.yaml), [.env.example](../.env.example) | Standalone Docker Desktop example; see the [quick start](docker-desktop.md). |
+| [compose.yaml](../compose.yaml), [.env.example](../.env.example) | Docker Desktop example and shared input for Kubernetes preparation. |
 | [kubernetes/](../kubernetes/) | Shared workloads and Services. |
 | [examples/acme/](../examples/acme/) | Installation template: namespace, images, configuration, ingress, storage and resource/network patches. |
 | [examples/customer-package/](../examples/customer-package/) | Customer settings/license template; add the `keyfile.json` supplied by Onify. |
-| [scripts/prepare-installation.sh](../scripts/prepare-installation.sh) | Prepares a new installation and generates its credentials. |
+| [scripts/prepare-installation.sh](../scripts/prepare-installation.sh) | Prepares a new installation from `.env` or a JSON customer package. |
+| [scripts/kubernetes.compose.yaml](../scripts/kubernetes.compose.yaml) | Kubernetes metadata merged with Compose when reading `.env`; never deployed. |
 | [examples/elasticsearch/](../examples/elasticsearch/) | Optional backup volume, snapshot schedule and retention. |
 | [tests/check.sh](../tests/check.sh) | Installation preflight; runs `self-check.sh` when called without a directory. |
 
@@ -51,7 +52,8 @@ it when finished.
 
 ## Run checks
 
-Use the tools listed in [Getting started](../README.md#before-you-start):
+Use the tools listed in [Getting started](../README.md#before-you-start), including
+Docker Compose for the `.env` preparation checks (no engine needed):
 
 ```bash
 bash tests/check.sh
@@ -83,6 +85,10 @@ invalid input, keyfile conversion for multiple Google registries, image-pull
 Secret creation, rejection of unrelated registry hosts, cleanup and protection
 against overwriting an existing installation. They also verify that supplied
 credentials are preserved and empty fields are generated independently.
+The `.env` cases verify shared image tags/credentials, quotes and literal dollar
+signs, Windows line endings, shell overrides, omitted/empty cluster defaults, invalid input
+and protection against executing shell text or leaking credentials. `.env`
+uses Compose's parser; the script never sources the file.
 
 For strict Kubernetes JSON schema validation, install
 [kubeconform](https://github.com/yannh/kubeconform#installation):

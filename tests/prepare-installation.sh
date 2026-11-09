@@ -9,7 +9,8 @@ trap 'rm -rf -- "$temp"' EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 mkdir -p "$temp/repo/scripts" "$temp/repo/tests" "$temp/customer package"
-cp "$ROOT/scripts/prepare-installation.sh" "$temp/repo/scripts/"
+cp "$ROOT/scripts/prepare-installation.sh" "$ROOT/scripts/kubernetes.compose.yaml" "$temp/repo/scripts/"
+cp "$ROOT/compose.yaml" "$temp/repo/"
 cp "$ROOT/tests/check.sh" "$temp/repo/tests/"
 cp -R "$ROOT/kubernetes" "$temp/repo/"
 mkdir -p "$temp/repo/examples/acme"
@@ -18,7 +19,8 @@ for file in kustomization.yaml namespace.yaml ingress.yaml storage.yaml resource
 done
 package="$temp/customer package"
 destination="$temp/repo/deployments/acme-test"
-prepare() { bash "$temp/repo/scripts/prepare-installation.sh" "$package" > "$temp/result.log" 2>&1; }
+prepare_args=("$package")
+prepare() { bash "$temp/repo/scripts/prepare-installation.sh" "${prepare_args[@]}" > "$temp/result.log" 2>&1; }
 reject() {
     if prepare; then printf 'Expected rejection (%s): %s\n' "${scenario:-existing}" "$1" >&2; exit 1; fi
     grep -Fq "$1" "$temp/result.log" || { cat "$temp/result.log" >&2; exit 1; }
@@ -151,4 +153,110 @@ second="$temp/repo/deployments/acme-second"
 [[ $(yq '.metadata.name' "$second/namespace.yaml") == customer-second ]]
 [[ $(yq '.spec | has("storageClassName")' "$second/storage.yaml") == false ]]
 if cmp -s "$temp/original-secrets.env" "$second/secrets.env"; then exit 1; fi
+
+# Reuse Docker's .env parser and values without starting containers or executing file contents.
+while IFS='=' read -r key _; do
+    case $key in ''|'#'*) continue ;; esac
+    unset "$key"
+done < "$ROOT/.env.example"
+unset COMPOSE_PROJECT_NAME
+cat > "$package/.env" <<'ENV'
+API_TAG=1.2.3
+APP_TAG=4.5.6
+GATEWAY_TAG=7.8.9
+ONIFY_client_code=acme
+ONIFY_client_instance=test
+ONIFY_adminUser_username=admin
+APP_PORT=4001
+ONIFY_initialLicense='test-license-${literal}'
+ONIFY_adminUser_password=' supplied $password $$literal # = \\path \' quote `touch should-not-exist` $(touch should-not-exist) '
+ONIFY_apiTokens_app_secret="quoted-\"secret\""
+ONIFY_client_secret='client-$secret-$$literal'
+ENV
+cp "$package/.env" "$temp/complete.env"
+prepare_args=(--env-file "$package/.env")
+prepare || { cat "$temp/result.log" >&2; exit 1; }
+cmp "$package/.env" "$temp/complete.env"
+sed 's/<SPACE>$/ /' > "$temp/expected.env" <<'ENV'
+ONIFY_initialLicense=test-license-${literal}
+ONIFY_adminUser_password= supplied $password $$literal # = \\path ' quote `touch should-not-exist` $(touch should-not-exist)<SPACE>
+ONIFY_apiTokens_app_secret=quoted-"secret"
+ONIFY_client_secret=client-$secret-$$literal
+ENV
+while IFS= read -r line; do grep -Fxq "$line" "$destination/secrets.env"; done < "$temp/expected.env"
+[[ ! -e should-not-exist && ! -e $temp/repo/should-not-exist && ! -e $package/should-not-exist ]]
+[[ ! -e $destination/.env && ! -e $destination/.customer.json ]]
+[[ -z $(find "$destination" -type f ! -perm 600 -print) ]]
+if grep -Eq 'test-license|supplied|quoted-|client-\$secret' "$temp/result.log"; then exit 1; fi
+[[ $(yq '.metadata.name' "$destination/namespace.yaml") == acme-test ]]
+[[ $(yq '.spec | has("storageClassName")' "$destination/storage.yaml") == false ]]
+[[ $(yq '.spec.resources.requests.storage' "$destination/storage.yaml") == 10Gi ]]
+yq -o=json '.' "$destination/ingress.yaml" | jq -es '
+    any(.[]; .metadata.name == "onify-app" and .spec.rules[0].host == "acme-test.example.com") and
+    any(.[]; .metadata.name == "onify-api" and .spec.rules[0].host == "api-acme-test.example.com") and
+    all(.[]; .spec.ingressClassName == "nginx" and .metadata.annotations["cert-manager.io/cluster-issuer"] == "letsencrypt-prod")
+' >/dev/null
+yq -o=json '.' "$destination/kustomization.yaml" > "$temp/env-kustomization.json"
+assert_json '.images == [
+    {name: "onify-api-image", newName: "eu.gcr.io/onify-images/hub/api", newTag: "1.2.3"},
+    {name: "onify-app-image", newName: "eu.gcr.io/onify-images/citizen/app-root", newTag: "4.5.6"},
+    {name: "onify-gateway-image", newName: "eu.gcr.io/onify-images/halo-gateway", newTag: "7.8.9"}
+]' "$temp/env-kustomization.json"
+reject 'Installation already exists'
+rm -rf "$destination"
+for scenario in missing_env_value same_host multiline_env invalid_env; do
+    cp "$temp/complete.env" "$package/.env"
+    case $scenario in
+        missing_env_value) printf '\nONIFY_client_secret=\n' >> "$package/.env"; reject 'Could not read .env' ;;
+        same_host) printf '\nK8S_API_HOST=acme-test.example.com\n' >> "$package/.env"; reject 'Invalid .env' ;;
+        multiline_env) printf '\nONIFY_client_secret="private-value\\nsecond-line"\n' >> "$package/.env"; reject 'Invalid .env' ;;
+        invalid_env) printf '\nONIFY_client_secret="private-value\n' >> "$package/.env"; reject 'Could not read .env' ;;
+    esac
+    [[ ! -e $destination ]]
+    [[ -z $(find "$temp/repo/deployments" -name '.prepare.*' -print) ]]
+    if grep -Eq 'private-value|test-license|supplied' "$temp/result.log"; then exit 1; fi
+done
+# Explicitly empty K8S settings select the same defaults as an older Docker-only .env.
+cp "$temp/complete.env" "$package/.env"
+sed -n 's/^\(K8S_[A-Z_]*\)=.*/\1=/p' "$ROOT/.env.example" >> "$package/.env"
+prepare || { cat "$temp/result.log" >&2; exit 1; }
+kubectl kustomize "$destination" > "$temp/defaults.yaml"
+rm -rf "$destination"
+cp "$temp/complete.env" "$package/.env"
+prepare || { cat "$temp/result.log" >&2; exit 1; }
+kubectl kustomize "$destination" > "$temp/omitted.yaml"
+cmp "$temp/defaults.yaml" "$temp/omitted.yaml"
+rm -rf "$destination"
+cp "$temp/complete.env" "$package/.env"
+sed -n '/^K8S_/p' "$ROOT/.env.example" >> "$package/.env"
+prepare || { cat "$temp/result.log" >&2; exit 1; }
+kubectl kustomize "$destination" > "$temp/template-defaults.yaml"
+cmp "$temp/defaults.yaml" "$temp/template-defaults.yaml"
+rm -rf "$destination"
+# Windows line endings, cluster overrides and shell precedence match the Docker path.
+sed 's/$/\r/' "$temp/complete.env" > "$package/.env"
+cat >> "$package/.env" <<'ENV'
+K8S_NAMESPACE=customer-k8s
+K8S_APP_HOST=citizen.example.invalid
+K8S_API_HOST=api.example.invalid
+K8S_INGRESS_CLASS=customer-nginx
+K8S_CLUSTER_ISSUER=customer-issuer
+K8S_INGRESS_CONTROLLER_NAMESPACE=customer-ingress
+K8S_INGRESS_CONTROLLER_NAME=customer-controller
+K8S_STORAGE_SIZE=20Gi
+K8S_STORAGE_CLASS=customer-storage
+ENV
+API_TAG=9.9.9 ONIFY_client_secret='override-$secret-$$literal' prepare || { cat "$temp/result.log" >&2; exit 1; }
+[[ $(yq '.metadata.name' "$destination/namespace.yaml") == customer-k8s ]]
+[[ $(yq '.images[0].newTag' "$destination/kustomization.yaml") == 9.9.9 ]]
+[[ $(yq '.spec.storageClassName' "$destination/storage.yaml") == customer-storage ]]
+[[ $(yq '.spec.resources.requests.storage' "$destination/storage.yaml") == 20Gi ]]
+[[ $(yq '.spec.ingress[1].from[0].podSelector.matchLabels."app.kubernetes.io/name"' "$destination/network-policy.yaml") == customer-controller ]]
+[[ $(yq '.spec.ingress[1].from[0].namespaceSelector.matchLabels."kubernetes.io/metadata.name"' "$destination/network-policy.yaml") == customer-ingress ]]
+yq -o=json '.' "$destination/ingress.yaml" | jq -es '
+    any(.[]; .metadata.name == "onify-app" and .spec.rules[0].host == "citizen.example.invalid") and
+    any(.[]; .metadata.name == "onify-api" and .spec.rules[0].host == "api.example.invalid") and
+    all(.[]; .spec.ingressClassName == "customer-nginx" and .metadata.annotations["cert-manager.io/cluster-issuer"] == "customer-issuer")
+' >/dev/null
+grep -Fxq 'ONIFY_client_secret=override-$secret-$$literal' "$destination/secrets.env"
 printf '%s\n' 'Customer package checks passed (no cluster access).'

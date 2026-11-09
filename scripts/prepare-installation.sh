@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Prepare a new installation from a customer package; never apply to a cluster.
+# Prepare a new installation from .env or a customer package; never apply to a cluster.
 # yq expressions must remain literal.
 # shellcheck disable=SC2016
 set +x
@@ -8,19 +8,33 @@ umask 077
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 fail() { printf '%s\n' "$*" >&2; exit 1; }
 if [[ ${1:-} == --help || ${1:-} == -h ]]; then
-    printf '%s\n' 'Usage: bash scripts/prepare-installation.sh CUSTOMER_PACKAGE_DIRECTORY' \
+    printf '%s\n' 'Usage: bash scripts/prepare-installation.sh --env-file .env' \
+        '   or: bash scripts/prepare-installation.sh CUSTOMER_PACKAGE_DIRECTORY' \
         'Creates deployments/<client_code>-<instance_code>. See docs/customer-package.md.'
     exit 0
 fi
-[[ $# == 1 && -d $1 ]] || fail 'Provide a customer package directory; see docs/customer-package.md.'
-package=$(cd -- "$1" && pwd)
+env_file=
+settings_name=customer.json
+if [[ $# == 2 && $1 == --env-file && -f $2 ]]; then
+    package=$(cd -- "$(dirname -- "$2")" && pwd)
+    env_file="$package/$(basename -- "$2")"
+    settings_name=.env
+elif [[ $# == 1 && -d $1 ]]; then
+    package=$(cd -- "$1" && pwd)
+else
+    fail 'Provide --env-file FILE or a customer package directory; see README.md.'
+fi
 for tool in jq yq kubectl openssl; do
     command -v "$tool" >/dev/null || fail "Install $tool; see README.md."
 done
 [[ $(yq --version) == *'github.com/mikefarah/yq/'*'version v4.'* ]] || fail 'Install Mike Farah yq v4.'
-for file in customer.json keyfile.json; do
-    [[ -f $package/$file && -r $package/$file ]] || fail "Missing or unreadable package file: $file"
-done
+if [[ -n $env_file ]]; then
+    command -v docker >/dev/null || fail 'Install Docker Compose to read .env; no running Docker engine is needed.'
+    [[ -r $env_file ]] || fail 'The .env file is not readable.'
+else
+    [[ -f $package/customer.json && -r $package/customer.json ]] || fail 'Missing or unreadable package file: customer.json'
+fi
+[[ -f $package/keyfile.json && -r $package/keyfile.json ]] || fail 'Missing or unreadable package file: keyfile.json'
 mkdir -p "$ROOT/deployments"
 stage=$(mktemp -d "$ROOT/deployments/.prepare.XXXXXX")
 destination=
@@ -33,7 +47,31 @@ cleanup() {
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
-cp "$package/customer.json" "$stage/.customer.json"
+if [[ -n $env_file ]]; then
+    # Compose parses .env as data, including quotes, interpolation and shell overrides.
+    if ! docker compose --project-directory "$ROOT" --env-file "$env_file" \
+        -f "$ROOT/compose.yaml" -f "$ROOT/scripts/kubernetes.compose.yaml" \
+        config --format json 2> "$stage/.error" |
+        jq '
+            # Compose escapes dollar signs in exported config; restore the actual values.
+            walk(if type == "string" then gsub("\\$\\$"; "$") else . end) |
+            .services["onify-api"].environment as $api |
+            def image: capture("^(?<repository>.+):(?<tag>[^:]+)$");
+            .["x-kubernetes"] + {
+                client_code: $api.ONIFY_client_code, instance_code: $api.ONIFY_client_instance,
+                license: $api.ONIFY_initialLicense,
+                admin: {username: $api.ONIFY_adminUser_username, password: $api.ONIFY_adminUser_password},
+                app_secret: $api.ONIFY_apiTokens_app_secret, client_secret: $api.ONIFY_client_secret,
+                images: {api: (.services["onify-api"].image | image),
+                    app: (.services["onify-app"].image | image),
+                    gateway: (.services["onify-gateway"].image | image)}
+            }
+        ' > "$stage/.customer.json" 2> "$stage/.error"; then
+        fail 'Could not read .env with Docker Compose. Check Compose is installed and fill the shared settings; see README.md.'
+    fi
+else
+    cp "$package/customer.json" "$stage/.customer.json"
+fi
 cp "$package/keyfile.json" "$stage/.keyfile.json"
 for file in .customer.json .keyfile.json; do
     jq -es 'length == 1 and (.[0] | type == "object")' "$stage/$file" >/dev/null 2> "$stage/.error" || fail 'Each package JSON file must contain exactly one valid JSON object.'
@@ -62,7 +100,7 @@ jq -e '
         (.controller_labels | type == "object" and length > 0 and all(to_entries[]; (.key | text) and (.value | text)))) and
     (.storage | fields(["size", "class_name"]) and (.size | text and test("^[1-9][0-9]*(Mi|Gi|Ti)$")) and
         (.class_name == "" or (.class_name | dns_label)))
-' "$stage/.customer.json" > /dev/null 2> "$stage/.error" || fail 'Invalid customer.json: fill every field in the template, use distinct DNS hostnames and remove placeholders/unknown fields.'
+' "$stage/.customer.json" > /dev/null 2> "$stage/.error" || fail "Invalid $settings_name: fill every field in the template, use distinct DNS hostnames and remove placeholders/unknown fields."
 name=$(jq -r '.client_code + "-" + .instance_code' "$stage/.customer.json")
 destination="$ROOT/deployments/$name"
 [[ ! -e $destination && ! -L $destination ]] || fail "Installation already exists: deployments/$name. Existing files and secrets were not changed."

@@ -1,0 +1,14 @@
+# Metadata for prepare-installation.sh --env-file; merged with the root Compose file.
+x-kubernetes:
+  namespace: ${K8S_NAMESPACE:-${ONIFY_client_code}-${ONIFY_client_instance}}
+  ingress:
+    app_host: ${K8S_APP_HOST:-${ONIFY_client_code}-${ONIFY_client_instance}.example.com}
+    api_host: ${K8S_API_HOST:-api-${ONIFY_client_code}-${ONIFY_client_instance}.example.com}
+    class_name: ${K8S_INGRESS_CLASS:-nginx}
+    cluster_issuer: ${K8S_CLUSTER_ISSUER:-letsencrypt-prod}
+    controller_namespace: ${K8S_INGRESS_CONTROLLER_NAMESPACE:-ingress-nginx}
+    controller_labels:
+      app.kubernetes.io/name: ${K8S_INGRESS_CONTROLLER_NAME:-ingress-nginx}
+  storage:
+    size: ${K8S_STORAGE_SIZE:-10Gi}
+    class_name: ${K8S_STORAGE_CLASS:-}

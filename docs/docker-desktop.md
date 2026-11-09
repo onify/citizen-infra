@@ -37,12 +37,14 @@ secrets (admin password, APP-token secret and client secret). Both codes must ma
 the license; use lowercase letters, digits and hyphens. The initial username is `admin`.
 For each secret, use a password manager or run `openssl rand -hex 32` separately.
 On macOS/Linux, restrict the completed file with `chmod 600 .env`.
+Leave the `K8S_*` section alone for Docker; it is only used when preparing Kubernetes.
 
 Keep single quotes around license/secret values, especially values containing
 `$`, `#` or spaces. Escape a literal apostrophe as `\'`. Compose's
 [environment-file syntax](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/#env-file-syntax)
-differs from the Kubernetes example's literal env files. `.env` is ignored by Git;
-do not commit or share it. Existing shell variables override matching `.env` values.
+is also used by Kubernetes preparation, which generates its own literal env files.
+`.env` is ignored by Git; do not commit or share it. Existing shell variables
+override matching `.env` values.
 
 ### Authenticate to GCR with keyfile.json
 
@@ -235,6 +237,28 @@ a different `COMPOSE_PROJECT_NAME` in each `.env`, for example `onify-acme-test-
 and `onify-acme-test-b`. Copying the directory alone does not isolate identical
 project names. Keep the project name stable and avoid shell overrides or `-p`
 unless you intentionally want to select a different installation.
+
+## Continue with Kubernetes
+
+Keep this `.env` and `keyfile.json`. All `K8S_*` settings have
+[defaults](configuration.md#kubernetes-settings-in-env), so an existing Docker
+`.env` needs no additions for preparation. From the repository root, run:
+
+```bash
+bash scripts/prepare-installation.sh --env-file .env
+```
+
+This reuses the image tags, client/instance codes, license and credentials you
+tested locally. It prepares a new installation without starting containers or
+contacting a cluster; Docker Desktop's engine can be stopped. Install the other
+[preparation tools](../README.md#before-you-start), then continue with
+[Select the cluster](../README.md#3-select-the-cluster).
+Before a live deployment, set `K8S_APP_HOST` and `K8S_API_HOST` to real DNS names
+for your cluster before preparing the installation; the defaults use `example.com`.
+
+Kubernetes gets its own persistent volume and starts with an empty database.
+Docker's data, application content, users and SSO configuration are not copied.
+For production, use Onify-approved versions/license and production credentials.
 
 ## Troubleshooting
 

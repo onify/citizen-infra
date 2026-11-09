@@ -36,6 +36,43 @@ changes the pod references and rolls out the affected workloads. Keep generated
 credentials stable across deployments. The APP receives only the internal API
 URL (`http://onify-api:8181`); it does not receive API credentials.
 
+## Kubernetes settings in .env
+
+Use the same [.env.example](../.env.example) as Docker. Preparation reads it with
+Docker Compose, then creates the literal `config.env` and `secrets.env` files
+used by Kustomize. Do not copy the quoted `.env` directly into those files.
+Images and shared credentials come from the root Compose configuration; the
+following settings only affect Kubernetes preparation. All have defaults when
+omitted or empty; no `K8S_*` values need to be filled in to prepare an installation:
+
+| Variable | Purpose/default |
+|---|---|
+| `K8S_APP_HOST` | `<client_code>-<client_instance>.example.com`. |
+| `K8S_API_HOST` | `api-<client_code>-<client_instance>.example.com`. |
+| `K8S_NAMESPACE` | Empty uses `<ONIFY_client_code>-<ONIFY_client_instance>`. |
+| `K8S_INGRESS_CLASS` | Ingress class; default `nginx`. |
+| `K8S_CLUSTER_ISSUER` | Existing cert-manager ClusterIssuer; default `letsencrypt-prod`. |
+| `K8S_INGRESS_CONTROLLER_NAMESPACE` | Controller namespace; default `ingress-nginx`. |
+| `K8S_INGRESS_CONTROLLER_NAME` | Controller's `app.kubernetes.io/name` pod label; default `ingress-nginx`. |
+| `K8S_STORAGE_SIZE` | Elasticsearch volume size; default `10Gi`. |
+| `K8S_STORAGE_CLASS` | Empty uses the cluster's default StorageClass. |
+
+Replace the example hostnames with real, distinct DNS names pointing to your
+Ingress controller before live deployment. Default hostnames are only examples;
+they do not configure DNS or issue working TLS certificates.
+
+For a controller with other pod label keys, adjust `network-policy.yaml` in the
+prepared installation before applying it, or use the JSON customer package.
+Review resource budgets in `resources-patch.yaml` for the target cluster.
+
+`.env` is an input for a **new** installation. It does not update an existing
+deployment or transfer Docker's data. `APP_PORT` and `COMPOSE_PROJECT_NAME` only
+control the local Docker installation. Shell overrides follow
+[Docker Compose's precedence](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/#ways-to-set-variables-with-interpolation).
+Keep license/password/secret values on one line; quote literal values with single
+quotes as in the template. Unknown extra `.env` variables are not passed to the
+Kubernetes workloads automatically.
+
 ## Cluster settings
 
 - **Namespace:** use the same name in `namespace.yaml` and `kustomization.yaml`.

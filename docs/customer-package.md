@@ -1,9 +1,28 @@
 # Prepare a customer package
 
 Onify supplies `keyfile.json` for both Docker and Kubernetes installations.
-For Kubernetes, prepare these two files once. The customer runs one command to
-create their installation files and credentials, then follows the install steps in the
-[Getting started guide](../README.md#getting-started).
+The simplest package is the shared `.env` plus `keyfile.json`. Fill in
+[.env.example](../.env.example)'s shared settings and keep the two files together.
+All `K8S_*` settings have defaults; set real Kubernetes DNS names in a package
+intended for live deployment. The customer can first test Docker and then prepare
+Kubernetes with the same image tags, license and credentials:
+
+```bash
+bash scripts/prepare-installation.sh --env-file .env
+```
+
+For a package in another directory, pass its path, for example
+`--env-file customer-packages/acme-test/.env`. Keep the files private and transfer
+them through your existing secure file transfer or secret store. Follow the
+[Getting started guide](../README.md#getting-started) to deploy. This reuses
+settings; it does not copy Docker's database or application data.
+
+## Alternative: JSON customer package
+
+For environments without Docker Compose or packages requiring custom image
+repositories/controller label selectors, the original JSON input is supported.
+Prepare the following two files and use the directory command below. The
+`--env-file` command reads only `.env` settings; it does not merge `customer.json`.
 
 ```text
 customer-packages/acme-test/
