@@ -1,6 +1,8 @@
 # Onify Citizen Infrastructure
 
 Deploy a new Onify Citizen environment: API, APP, worker, Gateway and Elasticsearch.
+Onify supplies a `keyfile.json` for access to its container images, whether you
+install with Docker or Kubernetes.
 
 **Quick local setup:** use the [Docker Desktop guide](docs/docker-desktop.md).
 Fill in `.env`, authenticate Docker with the supplied `keyfile.json`, and start
@@ -34,7 +36,7 @@ account on first start. Keep the default Gateway settings for this first setup.
   ClusterIssuer, and APP/API DNS names pointing to the Ingress controller.
   For other cluster settings, see [configuration](docs/configuration.md#cluster-settings).
 - Approved API, APP and Gateway image versions, a client license,
-  and a Docker registry credentials JSON file covering those images.
+  and the `keyfile.json` supplied by Onify with read access to those images.
 - Bash 3.2+, `kubectl`, `openssl`, [Mike Farah yq v4](https://github.com/mikefarah/yq#install)
   and [jq 1.6+](https://jqlang.org/download/). On macOS: `brew install kubectl yq jq`.
 
@@ -45,7 +47,9 @@ Use the directory printed by the script and the namespace from your package.
 ### 1. Get your customer package
 
 Place the prepared package in `customer-packages/acme-test/`. It must contain
-`customer.json` (including the license) and `registryCredentials.json`.
+`customer.json` (including the license) and the original `keyfile.json` supplied
+by Onify. Use the same Google service-account JSON format as for Docker;
+no Docker login, Google Cloud CLI or manual conversion is needed here.
 If you are preparing it for a customer, follow the
 [package checklist and template](docs/customer-package.md).
 
@@ -56,9 +60,10 @@ bash scripts/prepare-installation.sh customer-packages/acme-test
 ```
 
 The script fills in the installation files, generates any empty password/secret
-fields, preserves supplied values, and runs preflight. It reports the resulting
-directory and refuses to overwrite an existing installation. Save `secrets.env` securely;
-reuse these credentials for later deployments.
+fields, preserves supplied values, converts `keyfile.json` into
+`registryCredentials.json` for Kubernetes, and runs preflight. It reports the
+resulting directory and refuses to overwrite an existing installation. Save
+`secrets.env` securely; reuse these credentials for later deployments.
 
 ### 3. Select the cluster
 
@@ -76,8 +81,9 @@ ONIFY_NAMESPACE=acme-test
 
 ### 4. Install
 
-Use the registry credentials copied into the installation to create the namespace
-and image-pull Secret:
+Use the `registryCredentials.json` generated from your keyfile to create the
+namespace and image-pull Secret. Keep this generated file private; it contains
+the key. The original `keyfile.json` cannot be used directly as `.dockerconfigjson`.
 
 ```bash
 ONIFY_REGISTRY_FILE=deployments/acme-test/registryCredentials.json

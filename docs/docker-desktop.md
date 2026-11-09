@@ -15,7 +15,7 @@ Already configured? Go to [Start again, update or stop](#start-again-update-or-s
 - Start Docker Desktop using Linux containers. Allow roughly 6 GiB of memory and
   10 GiB of free disk for this starting environment; actual usage depends on the images and data.
 - Obtain approved API, APP **app-root**, and Gateway version tags,
-  the customer's Google service-account JSON key and a development license matching
+  Onify's supplied `keyfile.json` and a development license matching
   your client and instance codes.
   The API/worker image must support Elasticsearch 9.5.
   These private images and the license are not included in the repository.
@@ -46,7 +46,7 @@ do not commit or share it. Existing shell variables override matching `.env` val
 
 ### Authenticate to GCR with keyfile.json
 
-Place the customer's Google service-account JSON file at `keyfile.json` beside
+Place the Google service-account JSON file supplied by Onify at `keyfile.json` beside
 `compose.yaml` and `.env`. Use the original JSON containing `type: service_account`,
 `client_email` and `private_key`; no base64 conversion is needed. The service account
 needs read access to the repositories containing the three Onify images.
@@ -72,8 +72,10 @@ needed for this [service-account key login](https://docs.cloud.google.com/artifa
 
 `keyfile.json` is already ignored by Git. Keep it private and outside `.env`;
 the key is used by Docker on the host and is not mounted into application containers.
-The Kubernetes package's `registryCredentials.json` has a different format
-(`auths`); do not pass that file to `_json_key` or rename it to `keyfile.json`.
+Onify supplies the same keyfile format for Kubernetes. Its
+[package preparation script](customer-package.md) converts it into
+`registryCredentials.json` (`auths`) for an image-pull Secret; that generated
+file is not a keyfile and must not be passed to Docker's `_json_key` login.
 If you change an image registry, log in to that exact hostname as well.
 
 ## 2. Start

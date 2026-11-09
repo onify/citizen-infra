@@ -18,7 +18,7 @@ for tool in jq yq kubectl openssl; do
     command -v "$tool" >/dev/null || fail "Install $tool; see README.md."
 done
 [[ $(yq --version) == *'github.com/mikefarah/yq/'*'version v4.'* ]] || fail 'Install Mike Farah yq v4.'
-for file in customer.json registryCredentials.json; do
+for file in customer.json keyfile.json; do
     [[ -f $package/$file && -r $package/$file ]] || fail "Missing or unreadable package file: $file"
 done
 mkdir -p "$ROOT/deployments"
@@ -34,8 +34,8 @@ trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 cp "$package/customer.json" "$stage/.customer.json"
-cp "$package/registryCredentials.json" "$stage/registryCredentials.json"
-for file in .customer.json registryCredentials.json; do
+cp "$package/keyfile.json" "$stage/.keyfile.json"
+for file in .customer.json .keyfile.json; do
     jq -es 'length == 1 and (.[0] | type == "object")' "$stage/$file" >/dev/null 2> "$stage/.error" || fail 'Each package JSON file must contain exactly one valid JSON object.'
 done
 
@@ -68,18 +68,23 @@ destination="$ROOT/deployments/$name"
 [[ ! -e $destination && ! -L $destination ]] || fail "Installation already exists: deployments/$name. Existing files and secrets were not changed."
 
 jq -e '
-    .auths | type == "object" and length > 0 and all(.[];
-        type == "object" and
-        ((.identitytoken | type == "string" and length > 0) or
-         (.auth | type == "string" and length > 0 and
-            (try (. as $encoded | @base64d | contains(":") and ((@base64) == $encoded)) catch false))))
-' "$stage/registryCredentials.json" > /dev/null 2> "$stage/.error" || fail 'registryCredentials.json must be a Docker config with auths and embedded auth/identitytoken credentials; credential helpers and service-account key files are not supported.'
-jq -en --slurpfile config "$stage/.customer.json" --slurpfile registry "$stage/registryCredentials.json" '
-    def registry_host: sub("^https?://"; "") | split("/")[0] |
-        if . == "index.docker.io" or . == "registry-1.docker.io" then "docker.io" else . end;
-    ($registry[0].auths | keys | map(registry_host)) as $hosts |
-    all($config[0].images[]; (.repository | registry_host) as $host | $hosts | index($host))
-' >/dev/null 2> "$stage/.error" || fail 'Registry credentials must cover the API, APP and Gateway image registries.'
+    .type == "service_account" and
+    (.client_email | type == "string" and test("^[^\\s@]+@[^\\s@]+$")) and
+    (.private_key | type == "string" and test("\\S"))
+' "$stage/.keyfile.json" >/dev/null 2> "$stage/.error" || fail 'keyfile.json must be the original Google service-account JSON from Onify, with type, client_email and private_key; a Docker config is not a keyfile.'
+if ! jq -r '.private_key' "$stage/.keyfile.json" |
+    openssl pkey -noout -passin pass: > "$stage/.error" 2>&1; then
+    fail 'keyfile.json contains an invalid private_key; use the original file supplied by Onify.'
+fi
+# Never send the Google key to an unrelated image registry.
+jq -e 'all(.images[]; .repository | split("/")[0] |
+    test("^(gcr\\.io|(us|eu|asia)\\.gcr\\.io|[a-z0-9-]+-docker\\.pkg\\.dev)$"))
+' "$stage/.customer.json" >/dev/null 2> "$stage/.error" || fail 'keyfile.json supports only Google Container Registry and Artifact Registry image hosts.'
+jq -n --slurpfile config "$stage/.customer.json" --rawfile key "$stage/.keyfile.json" '
+    ("_json_key:" + $key | @base64) as $auth |
+    {auths: (reduce $config[0].images[] as $image ({};
+        .[$image.repository | split("/")[0]] = {auth: $auth}))}
+' > "$stage/registryCredentials.json" 2> "$stage/.error" || fail 'Could not generate registry credentials from keyfile.json.'
 
 for file in kustomization.yaml namespace.yaml ingress.yaml storage.yaml resources-patch.yaml network-policy.yaml config.env gateway.env .gitignore; do
     cp "$ROOT/examples/acme/$file" "$stage/$file"
@@ -137,7 +142,7 @@ if ! kubectl kustomize "$stage" 2> "$stage/.error" |
     fail 'Credential rendering changed an input value; check env-file compatibility.'
 fi
 bash "$ROOT/tests/check.sh" "$stage"
-rm "$stage/.customer.json" "$stage/.error"
+rm "$stage/.customer.json" "$stage/.keyfile.json" "$stage/.error"
 # Claim a new destination so retries/concurrent runs cannot overwrite existing credentials.
 mkdir "$destination" || fail 'Destination was created by another process; nothing was overwritten.'
 claimed=true

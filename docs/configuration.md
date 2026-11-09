@@ -60,8 +60,12 @@ URL (`http://onify-api:8181`); it does not receive API credentials.
   allow policy can still permit access. If central policies provide the same
   isolation, verify them before removing the example policy.
 
-For registry credentials, see Kubernetes' [private registry authentication guide](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).
-The credentials file must cover all registries used by the chosen images.
+Onify supplies `keyfile.json` for image access. [Package preparation](customer-package.md#3-add-the-keyfile-supplied-by-onify)
+generates `registryCredentials.json` for each Google registry used by the selected
+images; the [installation guide](../README.md#4-install) uses it to create
+`onify-regcred`. The service account must have read access to all selected image
+repositories. If you later change registry hosts, update the Docker config and
+reapply the pull Secret; editing image names alone does not update credentials.
 
 ## Gateway integrations
 

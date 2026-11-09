@@ -1,13 +1,14 @@
 # Prepare a customer package
 
-Prepare these two files once. The customer runs one command to create their
-installation files and credentials, then follows the install steps in the
+Onify supplies `keyfile.json` for both Docker and Kubernetes installations.
+For Kubernetes, prepare these two files once. The customer runs one command to
+create their installation files and credentials, then follows the install steps in the
 [Getting started guide](../README.md#getting-started).
 
 ```text
 customer-packages/acme-test/
 ├── customer.json
-└── registryCredentials.json
+└── keyfile.json
 ```
 
 ## 1. Create the package
@@ -18,14 +19,13 @@ From the repository root, copy the template into a new directory:
 mkdir -p customer-packages
 mkdir -m 700 customer-packages/acme-test && \
 cp examples/customer-package/customer.json customer-packages/acme-test/ && \
-cp examples/customer-package/registryCredentials.json.example customer-packages/acme-test/registryCredentials.json && \
 chmod 600 customer-packages/acme-test/*
 ```
 
-Use a new directory, then fill in the files below. `customer-packages/` is
-excluded from Git. Share the completed package through your existing secure
-file transfer or secret store; it contains a license, registry credentials and
-any passwords/secrets you supply in `customer.json`.
+Use a new directory, fill in `customer.json` and add the Onify-supplied keyfile
+as described below. `customer-packages/` is excluded from Git. Share the completed
+package through your existing secure file transfer or secret store; it contains a
+license, registry credentials and any passwords/secrets you supply in `customer.json`.
 
 ## 2. Fill in customer.json
 
@@ -76,18 +76,32 @@ license with the API.
 Gateway's repository is prefilled as `eu.gcr.io/onify-images/halo-gateway`.
 Set its approved version in `images.gateway.tag`.
 
-## 3. Add registry credentials
+## 3. Add the keyfile supplied by Onify
 
-**registryCredentials.json:** a Docker config containing `auths` with embedded
-credentials for every registry used by API, APP and Gateway. Each registry entry
-needs `auth` (base64-encoded `username:password`) or `identitytoken`.
-Replace the example file with the actual credentials file. A config containing
-only `credsStore`/`credHelpers`, or a Google service-account key JSON, is not this
-format. See [Kubernetes registry credentials](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/)
-for obtaining a Docker config suitable for a Kubernetes pull Secret.
+Copy the original Google service-account JSON supplied by Onify to
+`customer-packages/acme-test/keyfile.json`, then restrict its permissions:
 
-Use image-pull credentials scoped to the required repositories. The local check
-verifies format and registry coverage; it does not contact the registries.
+```bash
+chmod 600 customer-packages/acme-test/keyfile.json
+```
+
+The file must contain `type: service_account`, `client_email` and `private_key`.
+Do not base64-encode it, rename a Docker config to `keyfile.json`, or create a new
+Google account/key yourself. Onify provides a key with read access to the API,
+APP and Gateway repositories. The same file is used for
+[Docker login](docker-desktop.md#authenticate-to-gcr-with-keyfilejson).
+
+Preparation checks the JSON and private-key format and generates a Docker config
+using Google's [`_json_key` authentication](https://docs.cloud.google.com/artifact-registry/docs/docker/authentication#json-key).
+It adds an entry for each image registry in `customer.json`. Supported hosts are
+`gcr.io`, `eu.gcr.io`, `us.gcr.io`, `asia.gcr.io` and regional
+`*-docker.pkg.dev` hosts; other hosts are rejected to avoid exposing the key.
+These local checks do not verify Google permissions, key revocation or image tags.
+
+`registryCredentials.json` is now generated output, not a file Onify needs to
+supply. Existing prepared installations can keep using their generated Docker
+config. Older customer packages need the Onify-supplied `keyfile.json` before
+running preparation again; existing installation directories are never overwritten.
 
 ## 4. Prepare the installation
 
@@ -98,12 +112,16 @@ bash scripts/prepare-installation.sh customer-packages/acme-test
 ```
 
 The script creates `deployments/<client_code>-<instance_code>/`, fills in the
-manifests and environment files, copies the registry credentials, and runs
-preflight. Each empty password/secret field gets an independent random value
-using `openssl rand -hex 32`; supplied values are preserved. The resulting
-license, admin password, APP-token secret and client secret are saved in
+manifests and environment files, generates `registryCredentials.json` from
+`keyfile.json`, and runs preflight. Each empty password/secret field gets an
+independent random value using `openssl rand -hex 32`; supplied values are
+preserved. The resulting license, admin password, APP-token secret and client secret are saved in
 `secrets.env`; they are not printed.
 Files are readable/writable only by their owner, and directories are private.
+The generated Docker config contains the key as encoded credentials; protect it
+like the original keyfile. The original keyfile stays in the customer package
+and is not mounted into application containers. The install guide uses the
+generated config to create Kubernetes' [image-pull Secret](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).
 
 Gateway starts with authentication enabled and no integrations. Its client code
 and client secret reference the API configuration automatically.
