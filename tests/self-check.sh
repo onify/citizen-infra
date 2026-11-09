@@ -63,9 +63,12 @@ assert_json '
     .["StatefulSet/onify-api"].spec.template.spec.containers[0] as $api |
     .["StatefulSet/onify-worker"].spec.template.spec.containers[0] as $worker |
     .["Deployment/onify-gateway"].spec.template.spec.containers[0] as $gateway |
+    .["StatefulSet/onify-elasticsearch"].spec.template.spec.containers[0] as $elastic |
     .["NetworkPolicy/onify-citizen"].spec as $policy |
     $gateway.env[] | select(.name == "GATEWAY_HALO_API_CLIENT_SECRET") | .valueFrom.secretKeyRef as $ref |
     $api.image == $worker.image and $worker.args == ["worker"] and
+    $elastic.image == "docker.elastic.co/elasticsearch/elasticsearch:9.5.6" and
+    any($elastic.env[]; .name == "xpack.security.enabled" and .value == "false") and
     $ref.key == "ONIFY_client_secret" and
     all($gateway.env[]; [.name] - ["ONIFY_initialLicense", "ONIFY_adminUser_password", "ONIFY_apiTokens_app_secret", "ONIFY_client_secret"] | length == 1) and
     all($gateway.envFrom[]; (.secretRef.name // "") | startswith("onify-api-secrets-") | not) and

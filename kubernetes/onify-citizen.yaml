@@ -211,7 +211,7 @@ spec:
       terminationGracePeriodSeconds: 300
       containers:
         - name: onify-elasticsearch
-          image: docker.elastic.co/elasticsearch/elasticsearch:7.17.29
+          image: docker.elastic.co/elasticsearch/elasticsearch:9.5.6
           imagePullPolicy: Always
           ports:
             - name: client
@@ -223,6 +223,8 @@ spec:
               value: single-node
             - name: cluster.name
               value: onify-elasticsearch
+            - name: xpack.security.enabled
+              value: "false"
           envFrom:
             - configMapRef:
                 name: onify-elasticsearch-config

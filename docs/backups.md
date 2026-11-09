@@ -120,5 +120,5 @@ snapshot. A changing live index may have a different current count. Remove the
 temporary index after acceptance using its exact reviewed name, never a wildcard.
 This single-index check is not a full disaster-recovery exercise; perform a full
 restore in an isolated installation to verify disaster recovery.
-See Elastic's [SLM policy contract](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/slm-api-put-policy.html)
-and [restore procedure](https://www.elastic.co/guide/en/elasticsearch/reference/7.17/snapshots-restore-snapshot.html).
+See Elastic's [SLM policy contract](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-slm-put-lifecycle)
+and [restore procedure](https://www.elastic.co/docs/deploy-manage/tools/snapshot-and-restore/restore-snapshot).

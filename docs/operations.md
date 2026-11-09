@@ -7,6 +7,9 @@ with its actual directory.
 
 ## Apply changes
 
+For Elasticsearch version changes, read the [upgrade precautions](#elasticsearch-upgrades)
+before applying the new image to an existing data volume.
+
 Keep the installation's existing secret values. Validate and review the changes:
 
 ```bash
@@ -23,6 +26,21 @@ If the server dry run succeeds, apply and wait for the affected workloads as in
 ```bash
 kubectl --context "$ONIFY_CONTEXT" apply -k deployments/acme-test
 ```
+
+## Elasticsearch upgrades
+
+The Kubernetes base and Docker Compose example use Elasticsearch **9.5.6**.
+Do not start it directly against a PVC or Docker volume containing 7.17 data.
+Take and verify a [snapshot](backups.md) first, then follow Elastic's
+[supported upgrade procedure](https://www.elastic.co/docs/deploy-manage/upgrade/prepare-to-upgrade)
+through the latest 8.19.x release. Resolve Upgrade Assistant blockers and reindex
+7.x indices that must remain writable before moving to 9.5. Verify the chosen
+API/worker images against 9.5 in a test environment before customer deployment.
+
+Keep an existing installation pinned to its current Elasticsearch version until
+that migration is prepared. Do not delete its PVC or Docker volume to bypass an
+upgrade failure. Downgrading an upgraded data directory is unsupported; recovery
+requires the pre-upgrade snapshot and a compatible cluster.
 
 ## Troubleshooting
 
