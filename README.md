@@ -8,6 +8,18 @@ all five services with the root [compose.yaml](compose.yaml).
 Already configured? See [start again or update images](docs/docker-desktop.md#start-again-update-or-stop).
 For a Kubernetes installation, follow the guide below.
 
+## CI/CD and GitOps
+
+This repository provides initial deployment boilerplate to help you get started.
+Before production use, review and extend the CI/CD workflow to suit your
+environment, including automated validation, controlled deployments and rollback.
+
+We recommend GitOps for Kubernetes deployments, using Flux, Argo CD or a similar
+tool to keep the cluster aligned with version-controlled configuration. Terraform
+or equivalent infrastructure-as-code tooling can complement this by managing the
+underlying infrastructure. Choose the tools that fit your team's requirements
+and existing platform.
+
 ## Getting started
 
 This guide creates an empty installation: no imported customer data and no
