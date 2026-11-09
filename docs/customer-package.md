@@ -71,8 +71,9 @@ the prefilled settings with the cluster administrator.
 Client code, instance code, namespace and the class/issuer names use lowercase
 letters, digits and internal hyphens, up to 63 characters. Image repositories
 include their registry hostname; supply tags separately. Use the example's
-resource budgets for the first empty installation and adjust the generated
-`resources-patch.yaml` for customer capacity later.
+[starting resource profile](configuration.md#resource-sizing) for the first empty
+installation. Adjust the generated resource and heap settings for customer
+capacity and cluster policy before production.
 
 Use JSON strings for the license and credentials. For example:
 

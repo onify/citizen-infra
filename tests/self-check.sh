@@ -83,6 +83,34 @@ assert_json '
     (.data.ONIFY_client_secret | @base64d) == "test-only-ONIFY_client_secret#!=$()"
 ' "$temp/original.json"
 
+# Check the rendered resource/heap profile and customer CPU-limit overrides.
+assert_json '
+    .["StatefulSet/onify-api"].spec.template.spec.containers[0] as $api |
+    .["StatefulSet/onify-worker"].spec.template.spec.containers[0] as $worker |
+    .["Deployment/onify-gateway"].spec.template.spec.containers[0] as $gateway |
+    .["StatefulSet/onify-elasticsearch"].spec.template.spec.containers[0] as $elastic |
+    $api.resources == $worker.resources and
+    all(.[] | select(.kind == "StatefulSet" or .kind == "Deployment") |
+        .spec.template.spec.containers[]; .resources.limits | has("cpu") | not) and
+    .["ConfigMap/" + $api.envFrom[0].configMapRef.name].data.NODE_OPTIONS == "--max-old-space-size=3072" and
+    .["ConfigMap/" + $worker.envFrom[0].configMapRef.name].data.NODE_OPTIONS == "--max-old-space-size=3072" and
+    .["ConfigMap/" + $gateway.envFrom[0].configMapRef.name].data.NODE_OPTIONS == "--max-old-space-size=640" and
+    .["ConfigMap/" + $elastic.envFrom[0].configMapRef.name].data.ES_JAVA_OPTS == "-Xms2g -Xmx2g"
+' "$temp/original.json"
+cp "$overlay/resources-patch.yaml" "$temp/saved-resources.yaml"
+yq -i '.spec.template.spec.containers[0].resources.limits.cpu = "2"' "$overlay/resources-patch.yaml"
+accepted
+yq -i '.spec.template.spec.containers[0].resources.limits.cpu = ""' "$overlay/resources-patch.yaml"
+rejected 'Set a non-empty CPU limit or omit it'
+yq -i '.spec.template.spec.containers[0].resources.limits.cpu = null' "$overlay/resources-patch.yaml"
+accepted
+for field in requests.cpu requests.memory limits.memory; do
+    cp "$temp/saved-resources.yaml" "$overlay/resources-patch.yaml"
+    yq -i "del(.spec.template.spec.containers[0].resources.$field)" "$overlay/resources-patch.yaml"
+    rejected 'Set CPU/memory requests and a memory limit'
+done
+cp "$temp/saved-resources.yaml" "$overlay/resources-patch.yaml"
+
 # Exercise literal shell syntax, CRLF, no final newline, and malformed/duplicate keys.
 cp "$overlay/gateway-secrets.env" "$temp/saved.env"
 printf 'PROVIDER_SECRET=$(touch %s/should-not-exist)`touch %s/should-not-exist` #!="quoted"\\backslash\r\n' "$temp" "$temp" >> "$overlay/gateway-secrets.env"

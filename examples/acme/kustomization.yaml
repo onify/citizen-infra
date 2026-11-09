@@ -28,7 +28,7 @@ configMapGenerator:
       - config.env
   - name: onify-elasticsearch-config
     literals:
-      - ES_JAVA_OPTS=-Xms1024m -Xmx1024m
+      - ES_JAVA_OPTS=-Xms2g -Xmx2g
   - name: onify-gateway-config
     envs:
       - gateway.env

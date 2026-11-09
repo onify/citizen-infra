@@ -1,4 +1,5 @@
 # Starting budgets, not measured capacity. Size these for the customer's workload.
+# CPU limits are omitted to allow bursts; add them if the cluster requires them.
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -10,11 +11,10 @@ spec:
         - name: onify-api
           resources:
             requests:
-              cpu: 100m
-              memory: 512Mi
-            limits:
-              cpu: "2"
+              cpu: 1000m
               memory: 2Gi
+            limits:
+              memory: 4Gi
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -27,11 +27,10 @@ spec:
         - name: onify-worker
           resources:
             requests:
-              cpu: 100m
-              memory: 512Mi
-            limits:
-              cpu: "2"
+              cpu: 1000m
               memory: 2Gi
+            limits:
+              memory: 4Gi
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -47,7 +46,6 @@ spec:
               cpu: 100m
               memory: 64Mi
             limits:
-              cpu: "1"
               memory: 256Mi
 ---
 apiVersion: apps/v1
@@ -61,11 +59,10 @@ spec:
         - name: gateway
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
-            limits:
-              cpu: "1"
+              cpu: 250m
               memory: 512Mi
+            limits:
+              memory: 1Gi
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -78,8 +75,7 @@ spec:
         - name: onify-elasticsearch
           resources:
             requests:
-              cpu: 500m
-              memory: 2Gi
+              cpu: 1000m
+              memory: 4Gi
             limits:
-              cpu: "2"
-              memory: 2Gi
+              memory: 4Gi

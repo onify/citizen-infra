@@ -84,10 +84,9 @@ Kubernetes workloads automatically.
   API access is unnecessary; keep the APP Ingress for browser access.
 - **Storage:** `storage.yaml` requests 10Gi from the default StorageClass.
   Set `storageClassName` if needed and size the disk for the installation.
-- **Resources:** `resources-patch.yaml` sets CPU/memory requests and limits for
-  all five workloads. These are starting budgets, not measured customer
-  capacity. Keep Elasticsearch's heap (`ES_JAVA_OPTS` in `kustomization.yaml`)
-  below its container memory limit; the example uses a 1Gi heap and 2Gi limit.
+- **Resources:** `resources-patch.yaml` sets CPU/memory requests and memory limits
+  for all five workloads. Review the [starting profile](#resource-sizing) and
+  adjust it for the customer's workload and cluster policy before production.
 - **Elasticsearch host:** configure `vm.max_map_count=1048576` on the Linux nodes
   that run Elasticsearch; see [Elastic's host requirements](https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-elasticsearch-docker-prod).
 - **Network:** set both Ingress controller selectors in `network-policy.yaml`
@@ -103,6 +102,53 @@ images; the [installation guide](../README.md#4-install) uses it to create
 `onify-regcred`. The service account must have read access to all selected image
 repositories. If you later change registry hosts, update the Docker config and
 reapply the pull Secret; editing image names alone does not update credentials.
+
+## Resource sizing
+
+These are starting values for one replica of each service, not measured customer
+capacity. Onify maintains the starting profile; the customer's operations team
+must validate it with representative traffic, concurrent jobs and data volumes
+before production, then monitor memory peaks, restarts and CPU contention.
+
+| Container | CPU request | Memory request | Memory limit |
+|---|---:|---:|---:|
+| API (Node.js) | `1000m` | `2Gi` | `4Gi` |
+| Worker (Node.js) | `1000m` | `2Gi` | `4Gi` |
+| Gateway (Node.js) | `250m` | `512Mi` | `1Gi` |
+| APP (Nginx) | `100m` | `64Mi` | `256Mi` |
+| Elasticsearch | `1000m` | `4Gi` | `4Gi` |
+
+CPU limits are omitted so services can use spare CPU during bursts. Keep requests
+and memory limits; add CPU limits in `resources-patch.yaml` if the customer's
+policy requires them. A namespace LimitRange can inject defaults, and quotas
+can require explicit limits. Check the admitted Pods as well as the rendered
+manifests. See [Kubernetes resource management](https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/).
+
+With one replica each, requests total **3.35 CPU and 8.5625 GiB memory**; memory
+limits total **13.25 GiB**. Requests are scheduling budgets, not usage caps.
+Allow capacity for simultaneous peaks, system services, other workloads and
+rollouts; summing requests alone does not cover peak memory demand.
+
+API and worker share `NODE_OPTIONS=--max-old-space-size=3072` in `config.env`.
+Gateway uses `--max-old-space-size=640` in `gateway.env`. These values limit V8's
+old space, not total process memory. Buffers, native allocations, other heap
+regions and additional processes need headroom inside the container limit.
+Revisit both settings together when changing memory budgets; see
+[Node.js heap sizing](https://nodejs.org/api/cli.html#--max-old-space-sizesize-in-mib).
+
+Elasticsearch uses a 2 GiB heap (`-Xms2g -Xmx2g` in `kustomization.yaml`) with
+4 GiB requested and limited memory. Keep manual heap sizing at no more than
+half the container's available memory to leave room for off-heap allocations
+and filesystem cache. Elastic recommends automatic heap sizing for most
+production deployments; when overriding it in production, use a JVM options
+file rather than the example's `ES_JAVA_OPTS` environment variable. See
+[Elasticsearch JVM settings](https://www.elastic.co/docs/reference/elasticsearch/jvm-settings).
+
+New installations prepared from either `.env` or a customer package inherit this
+profile. Existing installation directories keep their settings: update their
+`resources-patch.yaml`, `config.env`, `gateway.env` and Elasticsearch heap setting
+together, then follow the [update procedure](operations.md#apply-changes).
+The local Docker Desktop example has its own development resource settings.
 
 ## Gateway integrations
 

@@ -129,8 +129,10 @@ jq -es --slurpfile namespace "$temp/namespace.json" '
             .[$workload].spec.template.spec.containers[0] as $container |
             require($container.image | test("^onify-(api|app|gateway)-image$") | not;
                 "Set image replacements for API, APP and Gateway in kustomization.yaml.") |
-            require(all(["requests", "limits"][] as $scope | ["cpu", "memory"][] as $key |
-                $container.resources[$scope][$key]; nonempty); "Set CPU/memory requests and limits for \($workload).") |
+            require(all($container.resources.requests.cpu, $container.resources.requests.memory,
+                $container.resources.limits.memory; nonempty); "Set CPU/memory requests and a memory limit for \($workload).") |
+            require(($container.resources.limits | has("cpu") | not) or
+                ($container.resources.limits.cpu | nonempty); "Set a non-empty CPU limit or omit it for \($workload).") |
             (environment($container)) as $env |
             require(all($env[]; .value | test("^\\s*REPLACE_WITH_") | not); "Replace environment placeholders for \($workload).")) |
         ["ONIFY_initialLicense", "ONIFY_adminUser_password", "ONIFY_apiTokens_app_secret", "ONIFY_client_secret"] as $keys |
