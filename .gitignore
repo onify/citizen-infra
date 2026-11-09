@@ -8,3 +8,4 @@ gateway-secrets.env
 customer.json
 !examples/customer-package/customer.json
 /rendered*.yaml
+/.env

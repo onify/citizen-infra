@@ -1,0 +1,117 @@
+# Local Docker Desktop example. Copy .env.example to .env and fill in the blanks.
+# Authenticate Docker with keyfile.json first; see docs/docker-desktop.md.
+name: onify-${ONIFY_client_code:?Set ONIFY_client_code in .env}_${ONIFY_client_instance:?Set ONIFY_client_instance in .env}
+
+services:
+  onify-elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:9.5.6
+    pull_policy: always
+    environment:
+      discovery.type: single-node
+      cluster.name: onify-elasticsearch
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms1g -Xmx1g
+    mem_limit: 2g
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://127.0.0.1:9200/_cluster/health?wait_for_status=yellow&timeout=5s"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  onify-api:
+    image: eu.gcr.io/onify-images/hub/api:${API_TAG:?Set API_TAG in .env}
+    pull_policy: always
+    platform: linux/amd64
+    environment: &api-environment
+      NODE_ENV: production
+      ENV_PREFIX: ONIFY_
+      INTERPRET_CHAR_AS_DOT: _
+      ONIFY_client_code: ${ONIFY_client_code:?Set ONIFY_client_code in .env}
+      ONIFY_client_instance: ${ONIFY_client_instance:?Set ONIFY_client_instance in .env}
+      ONIFY_db_indexPrefix: onify
+      ONIFY_db_elasticsearch_host: http://onify-elasticsearch:9200
+      ONIFY_websockets_agent_url: ""
+      ONIFY_adminUser_username: ${ONIFY_adminUser_username:-admin}
+      ONIFY_adminUser_password: ${ONIFY_adminUser_password:?Set ONIFY_adminUser_password in .env}
+      ONIFY_initialLicense: ${ONIFY_initialLicense:?Set ONIFY_initialLicense in .env}
+      ONIFY_apiTokens_app_secret: ${ONIFY_apiTokens_app_secret:?Set ONIFY_apiTokens_app_secret in .env}
+      ONIFY_client_secret: ${ONIFY_client_secret:?Set ONIFY_client_secret in .env}
+      ONIFY_autoinstall: "true"
+      ONIFY_resources_baseDir: /usr/share/onify/resources
+      ONIFY_resources_tempDir: /usr/share/onify/temp_resources
+      ONIFY_logging_elasticFlushInterval: "500"
+      ONIFY_logging_log: stdout,elastic
+      ONIFY_worker_cleanupInterval: "300"
+    depends_on:
+      onify-elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "const s=require('net').connect(8181,'127.0.0.1',()=>{s.end();process.exit(0)});s.on('error',()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
+    restart: unless-stopped
+
+  onify-worker:
+    image: eu.gcr.io/onify-images/hub/api:${API_TAG:?Set API_TAG in .env}
+    pull_policy: always
+    platform: linux/amd64
+    command: ["worker"]
+    environment: *api-environment
+    depends_on:
+      onify-api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  onify-app:
+    image: eu.gcr.io/onify-images/citizen/app-root:${APP_TAG:?Set APP_TAG in .env}
+    pull_policy: always
+    platform: linux/amd64
+    environment:
+      ONIFY_API_URL_INTERNAL: http://onify-api:8181
+    configs:
+      - source: app-nginx-redirects
+        target: /etc/nginx/conf.d/00-local-redirects.conf
+    ports:
+      - "127.0.0.1:${APP_PORT:-80}:4000"
+    depends_on:
+      onify-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:4000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  onify-gateway:
+    image: eu.gcr.io/onify-images/halo-gateway:${GATEWAY_TAG:?Set GATEWAY_TAG in .env}
+    pull_policy: always
+    platform: linux/amd64
+    environment:
+      NODE_ENV: production
+      PORT: "8686"
+      GATEWAY_HOST: 0.0.0.0
+      GATEWAY_TENANCY: single
+      GATEWAY_FAKE_MODE: "false"
+      GATEWAY_AUTH: onify-halo-api
+      GATEWAY_HALO_API_CLIENT_CODE: ${ONIFY_client_code:?Set ONIFY_client_code in .env}
+      GATEWAY_HALO_API_CLIENT_SECRET: ${ONIFY_client_secret:?Set ONIFY_client_secret in .env}
+    depends_on:
+      onify-api:
+        condition: service_healthy
+    restart: unless-stopped
+
+configs:
+  app-nginx-redirects:
+    # Keep the browser's public port when the image redirects legacy /helix paths.
+    content: |
+      absolute_redirect off;
+
+volumes:
+  elasticsearch-data:

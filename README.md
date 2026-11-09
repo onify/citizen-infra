@@ -1,7 +1,12 @@
 # Onify Citizen Infrastructure
 
-Deploy a new Onify Citizen environment on Kubernetes: API, APP, worker, Gateway
-and Elasticsearch.
+Deploy a new Onify Citizen environment: API, APP, worker, Gateway and Elasticsearch.
+
+**Quick local setup:** use the [Docker Desktop guide](docs/docker-desktop.md).
+Fill in `.env`, authenticate Docker with the supplied `keyfile.json`, and start
+all five services with the root [compose.yaml](compose.yaml).
+Already configured? See [start again or update images](docs/docker-desktop.md#start-again-update-or-stop).
+For a Kubernetes installation, follow the guide below.
 
 ## Getting started
 
@@ -99,6 +104,7 @@ fails, start with [troubleshooting](docs/operations.md#troubleshooting).
 
 ## Next steps
 
+- [Docker Desktop](docs/docker-desktop.md): a complete local Compose example.
 - [Customer package](docs/customer-package.md): the files and settings to prepare for a customer.
 - [Configuration](docs/configuration.md): images, cluster settings, variables and integrations.
 - [Operations](docs/operations.md): updates, troubleshooting and checks before customer use.

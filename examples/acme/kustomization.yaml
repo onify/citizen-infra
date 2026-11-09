@@ -21,7 +21,7 @@ images:
     newTag: REPLACE_WITH_GATEWAY_TAG
   # Set the Elasticsearch version for this installation:
   # - name: docker.elastic.co/elasticsearch/elasticsearch
-  #   newTag: 7.17.29
+  #   newTag: 9.5.6
 configMapGenerator:
   - name: onify-api-config
     envs:

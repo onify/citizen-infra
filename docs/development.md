@@ -7,6 +7,7 @@ This page explains the repository and checks for changes to it.
 
 | Path | Purpose |
 |---|---|
+| [compose.yaml](../compose.yaml), [.env.example](../.env.example) | Standalone Docker Desktop example; see the [quick start](docker-desktop.md). |
 | [kubernetes/](../kubernetes/) | Shared workloads and Services. |
 | [examples/acme/](../examples/acme/) | Installation template: namespace, images, configuration, ingress, storage and resource/network patches. |
 | [examples/customer-package/](../examples/customer-package/) | Customer package template: settings, license and registry credentials. |
@@ -57,6 +58,20 @@ Use the tools listed in [Getting started](../README.md#before-you-start):
 bash tests/check.sh
 bash tests/prepare-installation.sh
 ```
+
+For the Docker Desktop example, with Docker Compose and jq installed:
+
+```bash
+bash tests/compose.sh
+```
+
+This renders synthetic inputs and checks required values, shared credentials,
+startup dependencies, the single loopback port, persistent Elasticsearch storage,
+separate volumes for different client/instance pairs and an always-pull policy
+for every service.
+It needs no Docker daemon, registry credentials or license. It does not verify
+image compatibility or application startup; follow the [local guide](docker-desktop.md)
+to check startup and login with approved images. CI runs this check too.
 
 The self-check uses temporary test credentials and covers rendering, all five
 workloads, Services, routes, storage, resource budgets, isolation rules, input

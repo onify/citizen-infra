@@ -11,6 +11,13 @@ a new installation; edit the generated files for later adjustments.
 Set the API, APP and Gateway images and approved version tags in
 `kustomization.yaml`. API and worker share the same API image.
 
+Kubernetes and Docker Compose default to Elasticsearch **9.5.6**. Both use the
+internal HTTP endpoint with `xpack.security.enabled=false`, matching the API's
+connection settings. Keep Elasticsearch isolated using the supplied NetworkPolicy
+or private Compose network. Select API/worker images compatible with Elasticsearch
+9.5 and follow the [upgrade precautions](operations.md#elasticsearch-upgrades)
+before reusing existing data.
+
 | File | Purpose |
 |---|---|
 | [config.env](../examples/acme/config.env) | API/worker settings: client identity, admin identity, internal URLs, logging and initialization. |
@@ -44,6 +51,8 @@ URL (`http://onify-api:8181`); it does not receive API credentials.
   all five workloads. These are starting budgets, not measured customer
   capacity. Keep Elasticsearch's heap (`ES_JAVA_OPTS` in `kustomization.yaml`)
   below its container memory limit; the example uses a 1Gi heap and 2Gi limit.
+- **Elasticsearch host:** configure `vm.max_map_count=1048576` on the Linux nodes
+  that run Elasticsearch; see [Elastic's host requirements](https://www.elastic.co/docs/deploy-manage/deploy/self-managed/install-elasticsearch-docker-prod).
 - **Network:** set both Ingress controller selectors in `network-policy.yaml`
   to match the actual namespace and pod labels. The policy allows traffic within
   the installation namespace and controller access to APP/API ports 4000/8181.

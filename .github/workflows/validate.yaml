@@ -1,4 +1,4 @@
-name: Validate Kubernetes manifests
+name: Validate infrastructure examples
 
 on:
   push:
@@ -47,3 +47,7 @@ jobs:
       - name: Check customer package preparation
         shell: bash
         run: bash tests/prepare-installation.sh
+
+      - name: Check Docker Compose example
+        shell: bash
+        run: bash tests/compose.sh
