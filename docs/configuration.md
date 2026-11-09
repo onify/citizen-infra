@@ -9,7 +9,8 @@ a new installation; edit the generated files for later adjustments.
 ## Images and environment files
 
 Set the API, APP and Gateway images and approved version tags in
-`kustomization.yaml`. API and worker share the same API image.
+`kustomization.yaml`. API and worker share the same API image. APP must use an
+**app-root** image built for `/` with an internal API proxy.
 
 Kubernetes and Docker Compose default to Elasticsearch **9.5.6**. Both use the
 internal HTTP endpoint with `xpack.security.enabled=false`, matching the API's
@@ -28,8 +29,12 @@ before reusing existing data.
 Use literal `KEY=value` lines, with one value per line and no shell quotes or
 shell expansion. Additional API/worker variables can be added to the matching
 file; both containers load every key. Keep credentials in the secret files.
-Additional APP settings can be supplied with a Kustomize patch to its container's
-`env`.
+Additional APP runtime settings can be supplied with a Kustomize patch to its
+container's `env`; this does not change values built into its static SPA.
+
+No agent server is deployed. `ONIFY_websockets_agent_url=` disables API/worker
+agent connections in both examples. Set an actual agent URL only when adding
+that service to the installation.
 
 Kustomize generates ConfigMaps and Secrets with content hashes. Changing a file
 changes the pod references and rolls out the affected workloads. Keep generated
@@ -41,9 +46,10 @@ URL (`http://onify-api:8181`); it does not receive API credentials.
 Use the same [.env.example](../.env.example) as Docker. Preparation reads it with
 Docker Compose, then creates the literal `config.env` and `secrets.env` files
 used by Kustomize. Do not copy the quoted `.env` directly into those files.
-Images and shared credentials come from the root Compose configuration; the
-following settings only affect Kubernetes preparation. All have defaults when
-omitted or empty; no `K8S_*` values need to be filled in to prepare an installation:
+Only image tags, client/instance codes, admin identity and shared credentials
+carry over from Compose. Kubernetes uses the [installation template](../examples/acme/) for its runtime settings,
+including resource budgets and integrations; Compose service customizations are
+not copied. The following preparation settings have defaults when omitted or empty:
 
 | Variable | Purpose/default |
 |---|---|
@@ -152,11 +158,11 @@ The local Docker Desktop example has its own development resource settings.
 
 ## Gateway integrations
 
-The default is live mode with Halo API JWT authentication. Gateway reads the
-API client code and client secret through individual references; it does not
+The default is live mode with API JWT authentication (`GATEWAY_AUTH=onify-halo-api`).
+Gateway reads the API client code and client secret through individual references; it does not
 receive the admin password or APP token. Changes to client identity or its
 secret roll out API, worker and Gateway together. Callers must forward a valid
-Halo API user JWT; the static APP token is not a Gateway JWT.
+API user JWT; the static APP token is not a Gateway JWT.
 
 No integrations are enabled by the template. The three standard connections
 are explicitly disabled so the empty installation needs no provider credentials.
@@ -184,8 +190,9 @@ Other supported configurations:
 - **Isolated demo with fake data:** set `NODE_ENV=development`,
   `GATEWAY_FAKE_MODE=true` and `GATEWAY_AUTH=none` together. Preflight rejects
   unauthenticated live mode and fake data in production mode.
-- **Customer JSON configuration:** mount the reviewed JSON through a generated
-  ConfigMap, set `GATEWAY_CONFIG` to its container path, and remove the three
+- **Customer JSON configuration:** mount non-secret JSON through a generated
+  ConfigMap and keep credentials in Secret-backed environment variables. Set
+  `GATEWAY_CONFIG` to its container path and remove the three
   `GATEWAY_INTEGRATION_*_ENABLED` switches when the manifest owns activation.
 - **Halo API resource/configuration sync:** enable separately with the documented
   URL/token settings. JWT validation settings alone do not enable sync.

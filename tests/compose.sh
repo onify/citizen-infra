@@ -39,6 +39,8 @@ jq -e '
     ($api.environment.ONIFY_initialLicense | gsub("\\$\\$"; "$")) == "test-only-ONIFY_initialLicense-$literal # secret" and
     $gateway.GATEWAY_HALO_API_CLIENT_CODE == $api.environment.ONIFY_client_code and
     $gateway.GATEWAY_HALO_API_CLIENT_SECRET == $api.environment.ONIFY_client_secret and
+    all(["ACTORSMARTBOOK_ASSOCIATIONS", "BYGGR_CASES", "SSBTGO_ORGANIZATIONS"][];
+        $gateway["GATEWAY_INTEGRATION_" + . + "_ENABLED"] == "false") and
     ($gateway | has("ONIFY_adminUser_password") or has("ONIFY_apiTokens_app_secret") | not) and
     ($s["onify-app"].environment | keys) == ["ONIFY_API_URL_INTERNAL"] and
     $s["onify-app"].environment.ONIFY_API_URL_INTERNAL == "http://onify-api:8181" and

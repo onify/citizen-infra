@@ -1,28 +1,27 @@
 # Prepare a customer package
 
-Onify supplies `keyfile.json` for both Docker and Kubernetes installations.
-The simplest package is the shared `.env` plus `keyfile.json`. Fill in
-[.env.example](../.env.example)'s shared settings and keep the two files together.
-All `K8S_*` settings have defaults; set real Kubernetes DNS names in a package
-intended for live deployment. The customer can first test Docker and then prepare
-Kubernetes with the same image tags, license and credentials:
+Choose one input format and keep it beside the `keyfile.json` supplied by Onify:
+
+| Input | Use when | Credentials |
+|---|---|---|
+| [.env.example](../.env.example) → `.env` | Sharing settings between Docker and Kubernetes. Requires Docker Compose. | Fill in every secret. |
+| [customer.json](../examples/customer-package/customer.json) | Preparing Kubernetes without Compose, or selecting custom Google image repositories/controller labels. | Empty password/secret strings are generated. License is always required. |
+
+For the shared `.env` format, follow [Getting started](../README.md#getting-started)
+and prepare with:
 
 ```bash
 bash scripts/prepare-installation.sh --env-file .env
 ```
 
-For a package in another directory, pass its path, for example
-`--env-file customer-packages/acme-test/.env`. Keep the files private and transfer
-them through your existing secure file transfer or secret store. Follow the
-[Getting started guide](../README.md#getting-started) to deploy. This reuses
-settings; it does not copy Docker's database or application data.
+The path can be outside the repository, for example
+`--env-file customer-packages/acme-test/.env`. The script does not merge JSON
+settings into this input. Keep packages private and transfer them through your
+existing secure file transfer or secret store.
 
 ## Alternative: JSON customer package
 
-For environments without Docker Compose or packages requiring custom image
-repositories/controller label selectors, the original JSON input is supported.
-Prepare the following two files and use the directory command below. The
-`--env-file` command reads only `.env` settings; it does not merge `customer.json`.
+Prepare these files, then follow the four steps below:
 
 ```text
 customer-packages/acme-test/
@@ -41,10 +40,8 @@ cp examples/customer-package/customer.json customer-packages/acme-test/ && \
 chmod 600 customer-packages/acme-test/*
 ```
 
-Use a new directory, fill in `customer.json` and add the Onify-supplied keyfile
-as described below. `customer-packages/` is excluded from Git. Share the completed
-package through your existing secure file transfer or secret store; it contains a
-license, registry credentials and any passwords/secrets you supply in `customer.json`.
+`customer-packages/` is excluded from Git. Fill in `customer.json` and add the
+keyfile as described below.
 
 ## 2. Fill in customer.json
 
@@ -75,26 +72,10 @@ include their registry hostname; supply tags separately. Use the example's
 installation. Adjust the generated resource and heap settings for customer
 capacity and cluster policy before production.
 
-Use JSON strings for the license and credentials. For example:
-
-```json
-{
-  "license": "REPLACE_WITH_CLIENT_LICENSE",
-  "admin": { "username": "admin", "password": "" },
-  "app_secret": "",
-  "client_secret": ""
-}
-```
-
-Empty credential strings are generated independently. Non-empty strings are
-used exactly as supplied. Use single-line strings with normal JSON escaping;
-preparation checks that the rendered values match the inputs exactly.
-`app_secret` is the secret portion of
-the APP-token, not an encoded bearer token. The script does not verify the
-license with the API.
-
-Gateway's repository is prefilled as `eu.gcr.io/onify-images/halo-gateway`.
-Set its approved version in `images.gateway.tag`.
+Use single-line JSON strings for credentials. Non-empty strings are preserved
+exactly; empty password/secret strings get independent random values from
+`openssl rand -hex 32`. `app_secret` is the secret portion of the APP-token,
+not an encoded bearer token. The license is not verified with the API.
 
 ## 3. Add the keyfile supplied by Onify
 
@@ -118,10 +99,8 @@ It adds an entry for each image registry in `customer.json`. Supported hosts are
 `*-docker.pkg.dev` hosts; other hosts are rejected to avoid exposing the key.
 These local checks do not verify Google permissions, key revocation or image tags.
 
-`registryCredentials.json` is now generated output, not a file Onify needs to
-supply. Existing prepared installations can keep using their generated Docker
-config. Older customer packages need the Onify-supplied `keyfile.json` before
-running preparation again; existing installation directories are never overwritten.
+`registryCredentials.json` is generated output for Kubernetes' image-pull Secret;
+it is not an input keyfile or a Docker `_json_key` login password.
 
 ## 4. Prepare the installation
 
@@ -133,15 +112,12 @@ bash scripts/prepare-installation.sh customer-packages/acme-test
 
 The script creates `deployments/<client_code>-<instance_code>/`, fills in the
 manifests and environment files, generates `registryCredentials.json` from
-`keyfile.json`, and runs preflight. Each empty password/secret field gets an
-independent random value using `openssl rand -hex 32`; supplied values are
-preserved. The resulting license, admin password, APP-token secret and client secret are saved in
-`secrets.env`; they are not printed.
+`keyfile.json`, and runs preflight. The resulting license and credentials are
+saved in `secrets.env`; they are not printed.
 Files are readable/writable only by their owner, and directories are private.
 The generated Docker config contains the key as encoded credentials; protect it
-like the original keyfile. The original keyfile stays in the customer package
-and is not mounted into application containers. The install guide uses the
-generated config to create Kubernetes' [image-pull Secret](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).
+like the original keyfile. The original stays in the package and is not mounted
+into application containers.
 
 Gateway starts with authentication enabled and no integrations. Its client code
 and client secret reference the API configuration automatically.
@@ -152,8 +128,7 @@ Save the generated installation and credentials in your existing secret store
 before deploying. For later changes, edit that installation and follow
 [Operations](operations.md#apply-changes).
 
-Preparation does not contact a cluster or import customer application data.
-The customer continues at [Install](../README.md#4-install) with the generated
-directory and namespace. The cluster, storage, Ingress controller, cert-manager
-issuer, DNS and NetworkPolicy support must already exist. Live installation and
-acceptance testing are separate steps.
+Preparation does not contact a cluster or import application data. Continue at
+[Select the cluster](../README.md#3-select-the-cluster), then install and verify
+startup. The [cluster prerequisites](../README.md#before-you-start) must already
+be in place.

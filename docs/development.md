@@ -15,6 +15,11 @@ This page explains the repository and checks for changes to it.
 | [scripts/kubernetes.compose.yaml](../scripts/kubernetes.compose.yaml) | Kubernetes metadata merged with Compose when reading `.env`; never deployed. |
 | [examples/elasticsearch/](../examples/elasticsearch/) | Optional backup volume, snapshot schedule and retention. |
 | [tests/check.sh](../tests/check.sh) | Installation preflight; runs `self-check.sh` when called without a directory. |
+| `deployments/`, `customer-packages/` | Private generated installations and inputs; ignored by Git. |
+
+Edit shared workloads in `kubernetes/` and installation defaults in
+`examples/acme/`. Preparation copies those defaults into `deployments/`; it
+does not update existing installations. Keep templates free of customer secrets.
 
 ## How Kustomize works
 
@@ -53,42 +58,24 @@ it when finished.
 ## Run checks
 
 Use the tools listed in [Getting started](../README.md#before-you-start), including
-Docker Compose for the `.env` preparation checks (no engine needed):
+Docker Compose. Run all three checks after changing shared templates:
 
 ```bash
 bash tests/check.sh
 bash tests/prepare-installation.sh
-```
-
-For the Docker Desktop example, with Docker Compose and jq installed:
-
-```bash
 bash tests/compose.sh
 ```
 
-This renders synthetic inputs and checks required values, shared credentials,
-startup dependencies, the single loopback port, persistent Elasticsearch storage,
-separate volumes for different client/instance pairs and an always-pull policy
-for every service.
-It needs no Docker daemon, registry credentials or license. It does not verify
-image compatibility or application startup; follow the [local guide](docker-desktop.md)
-to check startup and login with approved images.
+| Check | Coverage |
+|---|---|
+| `check.sh` | Kubernetes rendering, workloads, resources, routes, storage/backups, isolation, secret rollouts and authentication. With an installation path, validates that installation instead. |
+| `prepare-installation.sh` | JSON/`.env` inputs, defaults, literal credentials, keyfile conversion, private permissions and overwrite protection. |
+| `compose.sh` | Docker wiring, credentials, disabled integrations, startup dependencies, loopback port, persistent volume isolation and pull policy. |
 
-The self-check uses temporary test credentials and covers rendering, all five
-workloads, Services, routes, storage, resource budgets, isolation rules, input
-validation and the backup patch. It also checks configuration/secret rollouts,
-Gateway authentication, literal secret values, duplicate keys and Windows line
-endings. Environment files are read as data, never executed. Temporary files
-are private and removed on exit; no cluster connection is made.
-The package checks cover generated settings/credentials, file permissions,
-invalid input, keyfile conversion for multiple Google registries, image-pull
-Secret creation, rejection of unrelated registry hosts, cleanup and protection
-against overwriting an existing installation. They also verify that supplied
-credentials are preserved and empty fields are generated independently.
-The `.env` cases verify shared image tags/credentials, quotes and literal dollar
-signs, Windows line endings, shell overrides, omitted/empty cluster defaults, invalid input
-and protection against executing shell text or leaking credentials. `.env`
-uses Compose's parser; the script never sources the file.
+These use private temporary files and synthetic credentials, with no Docker
+engine, cluster, real license or registry access. They check invalid inputs,
+quoting and secret handling; environment files are never executed as shell code.
+They do not verify image compatibility or application startup.
 
 For strict Kubernetes JSON schema validation, install
 [kubeconform](https://github.com/yannh/kubeconform#installation):
@@ -98,9 +85,17 @@ bash tests/check.sh --schema
 bash tests/check.sh deployments/acme-test --schema --kubernetes-version 1.32.0
 ```
 
-The default schema version is 1.32.0; select the target cluster version when
-checking an installation. Schemas are downloaded from the public registry.
+The default schema version, 1.32.0, is a validation baseline, not a recommended
+cluster version. Pass your target cluster version explicitly. Schemas are
+downloaded from the public registry.
 
 Schema checks do not cover every server-side rule or installed admission policy.
 Use the installation guide's server dry run and [runtime checks](operations.md#before-customer-use)
 to verify the actual cluster and application images.
+
+## Deployment automation
+
+This repository includes local checks, not a CI/CD pipeline. Add validation,
+deployment approval and rollback to your team's existing pipeline before
+production. For GitOps, use the [versioned customer configuration](configuration.md#version-customer-configuration)
+with your cluster's deployment tool; supply secrets from your secret store.

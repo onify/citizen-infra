@@ -65,8 +65,13 @@ assert_json '
     .["Deployment/onify-gateway"].spec.template.spec.containers[0] as $gateway |
     .["StatefulSet/onify-elasticsearch"].spec.template.spec.containers[0] as $elastic |
     .["NetworkPolicy/onify-citizen"].spec as $policy |
-    $gateway.env[] | select(.name == "GATEWAY_HALO_API_CLIENT_SECRET") | .valueFrom.secretKeyRef as $ref |
+    .["ConfigMap/" + $gateway.envFrom[0].configMapRef.name].data as $gateway_env |
+    ($gateway.env[] | select(.name == "GATEWAY_HALO_API_CLIENT_SECRET") | .valueFrom.secretKeyRef) as $ref |
     $api.image == $worker.image and $worker.args == ["worker"] and
+    .["ConfigMap/" + $api.envFrom[0].configMapRef.name].data.ONIFY_websockets_agent_url == "" and
+    .["ConfigMap/" + $worker.envFrom[0].configMapRef.name].data.ONIFY_websockets_agent_url == "" and
+    all(["ACTORSMARTBOOK_ASSOCIATIONS", "BYGGR_CASES", "SSBTGO_ORGANIZATIONS"][];
+        $gateway_env["GATEWAY_INTEGRATION_" + . + "_ENABLED"] == "false") and
     $elastic.image == "docker.elastic.co/elasticsearch/elasticsearch:9.5.6" and
     any($elastic.env[]; .name == "xpack.security.enabled" and .value == "false") and
     $ref.key == "ONIFY_client_secret" and
@@ -197,8 +202,8 @@ assert_json --slurpfile repository "$ROOT/examples/elasticsearch/snapshot-reposi
     $policy[0].repository == "backup_repo" and $policy[0].retention.max_count >= $policy[0].retention.min_count and
     $policy[0].config.include_global_state == false and $policy[0].config.feature_states == ["none"]
 ' "$temp/backup.json"
-replace "$overlay/kustomization.yaml" 's/namespace: onify-citizen-test/namespace: another-installation/'
+replace "$overlay/kustomization.yaml" 's/namespace: acme-test/namespace: another-installation/'
 rejected 'Set the same namespace'
-replace "$overlay/namespace.yaml" 's/onify-citizen-test/another-installation/'
+replace "$overlay/namespace.yaml" 's/acme-test/another-installation/'
 accepted
 printf '%s\n' 'Kustomize checks passed (no cluster access).'

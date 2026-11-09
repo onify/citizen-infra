@@ -3,8 +3,10 @@
 Set up backups before storing customer data. For the initial empty environment,
 start with [Getting started](../README.md#getting-started).
 Run commands from the repository root with `ONIFY_CONTEXT` and
-`ONIFY_NAMESPACE` set for your installation. Replace `deployments/acme-test`
-with its actual directory.
+`ONIFY_NAMESPACE` set in the same terminal as described in
+[Select the cluster](../README.md#3-select-the-cluster). These are temporary
+shell variables, not `.env` settings. Replace `deployments/acme-test` with the
+installation's actual directory.
 
 ## Storage
 

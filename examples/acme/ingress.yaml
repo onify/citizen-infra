@@ -10,10 +10,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - onify-citizen-test.acme.org
-      secretName: tls-secret-app-prod
+        - acme-test.example.com
+      secretName: onify-app-tls
   rules:
-    - host: onify-citizen-test.acme.org
+    - host: acme-test.example.com
       http:
         paths:
           - path: /
@@ -36,10 +36,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - onify-citizen-test-api.acme.org
-      secretName: tls-secret-api-prod
+        - api-acme-test.example.com
+      secretName: onify-api-tls
   rules:
-    - host: onify-citizen-test-api.acme.org
+    - host: api-acme-test.example.com
       http:
         paths:
           - path: /

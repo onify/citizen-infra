@@ -4,41 +4,35 @@ Deploy a new Onify Citizen environment: API, APP, worker, Gateway and Elasticsea
 Onify supplies a `keyfile.json` for access to its container images, whether you
 install with Docker or Kubernetes.
 
-**Quick local setup:** use the [Docker Desktop guide](docs/docker-desktop.md).
-Fill in `.env`, authenticate Docker with the supplied `keyfile.json`, and start
-all five services with the root [compose.yaml](compose.yaml).
-Already configured? See [start again or update images](docs/docker-desktop.md#start-again-update-or-stop).
-For Kubernetes, reuse the same `.env` and `keyfile.json` with the guide below.
-
-## CI/CD and GitOps
-
-This repository provides initial deployment boilerplate to help you get started.
-Before production use, review and extend the CI/CD workflow to suit your
-environment, including automated validation, controlled deployments and rollback.
-
-We recommend GitOps for Kubernetes deployments, using Flux, Argo CD or a similar
-tool to keep the cluster aligned with version-controlled configuration. Terraform
-or equivalent infrastructure-as-code tooling can complement this by managing the
-underlying infrastructure. Choose the tools that fit your team's requirements
-and existing platform.
+| Task | Guide |
+|---|---|
+| Run locally with Docker | [Docker Desktop](docs/docker-desktop.md) |
+| Deploy to Kubernetes | [Getting started](#getting-started) below |
+| Prepare files for a customer | [Customer package](docs/customer-package.md) |
+| Change images, resources or integrations | [Configuration](docs/configuration.md) |
+| Update or troubleshoot an installation | [Operations](docs/operations.md) |
+| Set up snapshots and verify recovery | [Backups](docs/backups.md) |
+| Understand the repository or run checks | [Development](docs/development.md) |
 
 ## Getting started
 
-This guide creates an empty installation: no imported customer data and no
-enabled Gateway integrations. The API initializes its own system data and admin
-account on first start. Keep the default Gateway settings for this first setup.
-Reusing `.env` carries over configuration and credentials; it does not migrate
-the Docker volume, users or application data to Kubernetes.
+This Kubernetes guide creates an empty installation. API initializes system data
+and an admin account; import the Citizen workspace/customer content separately.
+No Gateway integrations or agent server are included. Reusing Docker's `.env`
+carries over settings and credentials, not its database or application data.
 
 ### Before you start
 
 - A Kubernetes cluster with a default StorageClass (at least 10Gi available),
   a network plugin that enforces NetworkPolicy, and permission to deploy.
+  Allow for the [resource profile](docs/configuration.md#resource-sizing) and
+  [Elasticsearch host settings](docs/configuration.md#cluster-settings).
 - The example uses `nginx` Ingress, cert-manager with a `letsencrypt-prod`
   ClusterIssuer, and APP/API DNS names pointing to the Ingress controller.
   For other cluster settings, see [configuration](docs/configuration.md#cluster-settings).
 - Approved API, APP and Gateway image versions, a client license,
   and the `keyfile.json` supplied by Onify with read access to those images.
+  Use an APP **app-root** image and API/worker images compatible with Elasticsearch 9.5.
 - Bash 3.2+, `kubectl`, `openssl`, [Mike Farah yq v4](https://github.com/mikefarah/yq#install)
   and [jq 1.6+](https://jqlang.org/download/). On macOS: `brew install kubectl yq jq`.
 - Docker Compose 2.23.1+ to read the shared `.env` with Docker's own syntax.
@@ -55,26 +49,18 @@ Keep the `.env` and Onify-supplied `keyfile.json` you used for Docker beside
 `.env` and fill in its shared settings: the three image tags, client/instance
 codes, license, admin username/password, APP-token secret and client secret.
 
-Every `K8S_*` setting has a default, even if missing or empty. An older Docker
-`.env` works without adding a Kubernetes section. For client `acme` and instance
-`test`, the defaults are namespace `acme-test`, APP host `acme-test.example.com`
-and API host `api-acme-test.example.com`, nginx Ingress, `letsencrypt-prod`,
-10Gi storage and the cluster's default StorageClass.
-
-These are preparation defaults. Before deploying to a live cluster, set
-`K8S_APP_HOST` and `K8S_API_HOST` to real DNS names pointing to its Ingress
-controller; `example.com` is an example domain and cannot provide your live TLS
-certificate. Check the [Kubernetes settings](docs/configuration.md#kubernetes-settings-in-env)
-if your cluster uses another controller, issuer or StorageClass. `APP_PORT` only
-affects Docker; Kubernetes uses HTTPS hostnames.
+All `K8S_*` values have [defaults](docs/configuration.md#kubernetes-settings-in-env).
+Before preparation for a live cluster, set `K8S_APP_HOST` and `K8S_API_HOST` to
+distinct real DNS names pointing to its Ingress controller; the default
+`example.com` names cannot provide your TLS certificate. Check the controller,
+issuer and StorageClass settings too. `APP_PORT` only affects Docker.
 
 Keep single quotes around license/secret values, as in the Docker guide. Use
 single-line values. Shell variables override matching `.env` values in both
 flows. Protect `.env` and `keyfile.json` with `chmod 600 .env keyfile.json`.
 No Docker login or Google Cloud CLI is needed for Kubernetes preparation.
 
-The [JSON customer-package flow](docs/customer-package.md#alternative-json-customer-package)
-is still supported for installations prepared without Docker Compose.
+Without Docker Compose, use the [JSON customer package](docs/customer-package.md#alternative-json-customer-package).
 
 ### 2. Prepare the installation
 
@@ -82,30 +68,37 @@ is still supported for installations prepared without Docker Compose.
 bash scripts/prepare-installation.sh --env-file .env
 ```
 
-The script uses the same image tags and credentials as Docker, fills in the
-Kubernetes installation files, converts `keyfile.json` into
-`registryCredentials.json`, and runs preflight. All shared credentials must be
-filled in; this path does not generate replacement passwords. The keyfile is
-read from the directory containing your `.env`.
+The script reads `keyfile.json` beside `.env`, creates Kubernetes files and
+`registryCredentials.json`, and runs offline preflight. Shared image tags and
+credentials are preserved; all must be filled in for this input format.
 
 It reports `deployments/<client_code>-<client_instance>/` and refuses to overwrite
-an existing installation. Save that directory securely. Preparation creates a
-new installation; later `.env` edits are not automatically applied to it. Follow
-[Operations](docs/operations.md#apply-changes) for later changes.
+an existing installation. Save that directory securely. Later `.env` edits do
+not update it; edit the generated files and follow [Operations](docs/operations.md#apply-changes).
 
 ### 3. Select the cluster
+
+After preparation reports `Installation preflight passed`, run this in your
+terminal from the repository root to list the available Kubernetes contexts:
 
 ```bash
 kubectl config get-contexts
 ```
 
-After preparation reports `Installation preflight passed`, select the intended
-context from the list and set the namespace from the generated `namespace.yaml`:
+In **the same terminal**, run the assignments below. Replace
+`REPLACE_WITH_CONTEXT` with the intended context's value from the `NAME` column.
+Replace `acme-test` with `metadata.name` from your generated
+`deployments/<client>-<instance>/namespace.yaml`:
 
 ```bash
 ONIFY_CONTEXT=REPLACE_WITH_CONTEXT
 ONIFY_NAMESPACE=acme-test
 ```
+
+These are temporary shell variables used by the `kubectl` commands below.
+Do not put them in `.env`; no `export` is needed. Continue in this terminal,
+or set them again if you open a new one. `K8S_NAMESPACE` in `.env` is the input
+used during preparation; `ONIFY_NAMESPACE` here refers to that prepared namespace.
 
 ### 4. Install
 
@@ -148,11 +141,5 @@ Confirm that the APP loads and login works. This is the starting environment;
 customer content and integrations can be added afterwards. If startup or login
 fails, start with [troubleshooting](docs/operations.md#troubleshooting).
 
-## Next steps
-
-- [Docker Desktop](docs/docker-desktop.md): a complete local Compose example.
-- [Customer package](docs/customer-package.md): the files and settings to prepare for a customer.
-- [Configuration](docs/configuration.md): images, cluster settings, variables and integrations.
-- [Operations](docs/operations.md): updates, troubleshooting and checks before customer use.
-- [Backups](docs/backups.md): snapshots, retention and restore verification.
-- [Development](docs/development.md): repository structure, Kustomize and local tests.
+Before storing customer data, complete the [runtime checks](docs/operations.md#before-customer-use)
+and configure [backups](docs/backups.md).

@@ -1,9 +1,9 @@
 # Quick start with Docker Desktop
 
 Run an empty Onify Citizen environment locally with one [Compose file](../compose.yaml):
-API, APP, worker, Gateway and Elasticsearch. All service addresses and wiring are
-predefined. You only fill in [.env](../.env.example); no Kubernetes setup is needed.
-This runs published images, without building source code or providing hot reload.
+API, APP, worker, Gateway and Elasticsearch. Fill in [.env](../.env.example) and
+authenticate with Onify's `keyfile.json`. This runs published images without
+building source code or providing hot reload.
 Elasticsearch is pinned to **9.5.6**, matching Kubernetes. If an existing Docker
 volume contains 7.x data, follow the [upgrade precautions](operations.md#elasticsearch-upgrades)
 before starting this version.
@@ -43,8 +43,8 @@ Keep single quotes around license/secret values, especially values containing
 `$`, `#` or spaces. Escape a literal apostrophe as `\'`. Compose's
 [environment-file syntax](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/#env-file-syntax)
 is also used by Kubernetes preparation, which generates its own literal env files.
-`.env` is ignored by Git; do not commit or share it. Existing shell variables
-override matching `.env` values.
+`.env` is ignored by Git; transfer it only through your secure file transfer or
+secret store. Shell variables override matching `.env` values.
 
 ### Authenticate to GCR with keyfile.json
 
@@ -72,13 +72,9 @@ Desktop saves the login in its configured credential store, so repeat this step
 when changing customer credentials or after logging out. Google Cloud CLI is not
 needed for this [service-account key login](https://docs.cloud.google.com/artifact-registry/docs/docker/authentication#json-key).
 
-`keyfile.json` is already ignored by Git. Keep it private and outside `.env`;
-the key is used by Docker on the host and is not mounted into application containers.
-Onify supplies the same keyfile format for Kubernetes. Its
-[package preparation script](customer-package.md) converts it into
-`registryCredentials.json` (`auths`) for an image-pull Secret; that generated
-file is not a keyfile and must not be passed to Docker's `_json_key` login.
-If you change an image registry, log in to that exact hostname as well.
+`keyfile.json` is ignored by Git and used only by Docker on the host. Keep it
+private; do not substitute Kubernetes' generated `registryCredentials.json`.
+If you change an image registry, log in to that hostname too.
 
 ## 2. Start
 
@@ -88,13 +84,8 @@ docker compose up -d --wait --wait-timeout 300
 docker compose ps
 ```
 
-Every service has [`pull_policy: always`](https://docs.docker.com/reference/compose-file/services/#pull_policy): each `docker compose up` checks the
-registry and pulls the current image for its configured tag before starting.
-For example, `API_TAG=dev` follows new `dev` images; it does not change the tag
-or upgrade Elasticsearch to another version. Unchanged layers are reused.
-Registry access and a valid Docker login are needed for each update/start.
-Use `up` to refresh images; `docker compose restart` and Docker Desktop's start
-button restart existing containers without pulling updates.
+Every service has [`pull_policy: always`](https://docs.docker.com/reference/compose-file/services/#pull_policy), so `up` fetches the current image for
+each configured tag. Registry access and a valid Docker login are required.
 
 Compose rejects missing required values before starting. `config --quiet` avoids
 printing the rendered secrets. Elasticsearch starts first; API waits for its
@@ -126,35 +117,23 @@ cookies use one origin; API has no separate host port. The inline Nginx config
 keeps legacy `/helix/...` redirects relative so they preserve the public host
 and port, including a custom `APP_PORT`.
 
-Gateway validates Halo API user JWTs using the same client code and secret as
-API. This example supplies no integration settings or provider credentials.
-Customer content, SSO and integrations can be configured after this empty setup;
-the example does not import them automatically. See [Gateway configuration](configuration.md#gateway-integrations).
+Gateway validates API user JWTs using the same client code and secret as API.
+All three standard integrations are explicitly disabled; enable only those you
+configure in [Gateway configuration](configuration.md#gateway-integrations).
+Import Citizen workspace/customer content and configure SSO separately.
 For Compose, add additional settings explicitly under the relevant service's
 `environment`; adding a name to `.env` alone does not pass it to a container.
 API and worker share the API environment block; Gateway has its own.
 
-No agent server is included. API and worker explicitly set
-`ONIFY_websockets_agent_url` to an empty string to disable their outbound agent
-WebSocket connection and override the image's `OVERRIDE_IN_ENV` placeholder.
+No agent server is included; API and worker disable the outbound connection with
+an empty `ONIFY_websockets_agent_url`.
 
 ## Login and SSO
 
-Use the **app-root** image: its SPA is built for `/`. Its relevant settings are:
-
-| Variable | Value | Where it applies |
-|---|---|---|
-| `HELIX_BASE_URL` | `/` | SPA build/router base; already built into app-root |
-| `HELIX_API_URL` | `/api/v2` | SPA build; browser API calls |
-| `HELIX_LOGIN_URL` | `/login` | SPA build and Nginx login route |
-| `ONIFY_HUB_APP_URL` | `/` | SPA build; application links |
-| `ONIFY_HUB_API_PATH` | `/api/v2` | SPA build and Nginx API route |
-| `ONIFY_SSO_CALLBACK_PATH` | `/sso/callback` | Nginx callback route |
-| `ONIFY_API_URL_INTERNAL` | `http://onify-api:8181` | Nginx upstream, set by Compose |
-
-Changing a build-time variable in Compose does not rebuild the static SPA.
-`HELIX_INTERNAL_LOGIN_PAGE` and `HELIX_ERROR_URL` are no longer application
-environment settings: API owns `internal_login_page` and `error_url`.
+Use the **app-root** image, built to serve the SPA at `/` and call `/api/v2` and
+`/login`. Compose sets its runtime upstream with
+`ONIFY_API_URL_INTERNAL=http://onify-api:8181`. Adding SPA build variables to
+Compose does not rebuild the image.
 
 Use an API image with root-path defaults: `internal_login_page=/login/internal`,
 `error_url=/error` and `logout_url=/logout`. Compose uses the image's own defaults.
@@ -170,13 +149,9 @@ For external SSO, configure the provider in the API and register the public
 callback URL for its domain, such as `http://localhost/sso/callback/<domain>`.
 The provider must permit that local callback. Use HTTPS with a hostname and
 certificate trusted by the browser if the provider requires it; this HTTP example
-does not provision TLS or an identity provider. Use the standard port for SSO:
-the current API's SSO origin handling omits nonstandard ports when building
-callback URLs. A custom `APP_PORT` is suitable for local password-login testing.
-
-For an existing local setup, set `APP_PORT=80` in `.env` and run the start command
-again, then open `http://localhost/`. The former `API_PORT` setting is no longer
-used. Keep the client/instance codes unchanged to retain your data.
+does not provision TLS or an identity provider. Use `APP_PORT=80` for this SSO
+example; verify callback URLs with your selected API image before using another
+port. A custom `APP_PORT` is suitable for local password-login testing.
 
 ## Start again, update or stop
 
@@ -190,8 +165,9 @@ docker compose up -d --wait --wait-timeout 300
 This is also the update command when a new `dev` image is published or you change
 an image tag in `.env`. Compose pulls the configured images and
 [recreates containers whose image or configuration changed](https://docs.docker.com/reference/cli/docker/compose/up/).
-There is no need to run `down` first. Open [http://localhost/](http://localhost/)
-again, or use the port set by `APP_PORT`.
+It keeps the selected tags, including the pinned Elasticsearch version.
+`docker compose restart` and Docker Desktop's start button only restart existing
+containers. There is no need to run `down` before updating.
 
 To stop the installation and remove its containers and network:
 
@@ -240,25 +216,11 @@ unless you intentionally want to select a different installation.
 
 ## Continue with Kubernetes
 
-Keep this `.env` and `keyfile.json`. All `K8S_*` settings have
-[defaults](configuration.md#kubernetes-settings-in-env), so an existing Docker
-`.env` needs no additions for preparation. From the repository root, run:
-
-```bash
-bash scripts/prepare-installation.sh --env-file .env
-```
-
-This reuses the image tags, client/instance codes, license and credentials you
-tested locally. It prepares a new installation without starting containers or
-contacting a cluster; Docker Desktop's engine can be stopped. Install the other
-[preparation tools](../README.md#before-you-start), then continue with
-[Select the cluster](../README.md#3-select-the-cluster).
-Before a live deployment, set `K8S_APP_HOST` and `K8S_API_HOST` to real DNS names
-for your cluster before preparing the installation; the defaults use `example.com`.
-
-Kubernetes gets its own persistent volume and starts with an empty database.
-Docker's data, application content, users and SSO configuration are not copied.
-For production, use Onify-approved versions/license and production credentials.
+Reuse `.env` and `keyfile.json` with [Getting started](../README.md#getting-started).
+Set real `K8S_APP_HOST`/`K8S_API_HOST` names before preparation for a live cluster.
+Kubernetes starts with a separate empty database: Docker data, users and SSO
+configuration are not copied. Use production credentials and approved images/license
+for production.
 
 ## Troubleshooting
 
@@ -293,7 +255,4 @@ docker compose logs --tail=100 onify-elasticsearch onify-api onify-app onify-wor
   lacks the Citizen workspace/configuration. Import the intended application
   configuration separately; Compose initializes API system data and the admin account.
 
-This is a local development example with HTTP and a single Elasticsearch node,
-using the same Elasticsearch version as the Kubernetes base. It has no TLS or
-backup setup. Use the [Kubernetes guide](../README.md#getting-started) for the
-repository's customer deployment path.
+This local HTTP example has one Elasticsearch node and no TLS or backup setup.

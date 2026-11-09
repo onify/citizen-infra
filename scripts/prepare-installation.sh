@@ -188,4 +188,4 @@ cp -R "$stage/." "$destination/"
 complete=true
 printf 'Prepared deployments/%s (no cluster access).\n' "$name"
 printf 'Admin password and secrets are in deployments/%s/secrets.env; empty inputs were generated and values are not printed.\n' "$name"
-printf '%s\n' 'Store the installation securely. Continue with the Install step in README.md using this directory and its namespace.'
+printf '%s\n' 'Store the installation securely. Continue with Select the cluster in README.md using this directory and its namespace.'
