@@ -1,6 +1,7 @@
 # Quick start with Docker Desktop
 
-Run an empty Onify Citizen environment locally with one [Compose file](../compose.yaml):
+Run an empty Onify Citizen environment for testing on your development computer
+with one [Compose file](../compose.yaml):
 API, APP, worker, Gateway and Elasticsearch. Fill in [.env](../.env.example) and
 authenticate with Onify's `keyfile.json`. This runs published images without
 building source code or providing hot reload.
@@ -111,8 +112,8 @@ as running, with Elasticsearch, API and APP marked healthy.
 | Worker | Background process using the API image |
 
 Only APP publishes a port, bound to this computer's loopback interface.
-Its existing Nginx serves the SPA and proxies `/api/v2/`, `/login` and
-`/sso/callback/` to API at `http://onify-api:8181`. Browser requests and login
+Its existing Nginx serves the SPA and proxies `/api/v2/` and `/login`
+to API at `http://onify-api:8181`. Browser requests and login
 cookies use one origin; API has no separate host port. The inline Nginx config
 keeps legacy `/helix/...` redirects relative so they preserve the public host
 and port, including a custom `APP_PORT`.
@@ -120,7 +121,7 @@ and port, including a custom `APP_PORT`.
 Gateway validates API user JWTs using the same client code and secret as API.
 All three standard integrations are explicitly disabled; enable only those you
 configure in [Gateway configuration](configuration.md#gateway-integrations).
-Import Citizen workspace/customer content and configure SSO separately.
+Import the Citizen workspace/customer content separately for your tests.
 For Compose, add additional settings explicitly under the relevant service's
 `environment`; adding a name to `.env` alone does not pass it to a container.
 API and worker share the API environment block; Gateway has its own.
@@ -128,7 +129,7 @@ API and worker share the API environment block; Gateway has its own.
 No agent server is included; API and worker disable the outbound connection with
 an empty `ONIFY_websockets_agent_url`.
 
-## Login and SSO
+## Local login
 
 Use the **app-root** image, built to serve the SPA at `/` and call `/api/v2` and
 `/login`. Compose sets its runtime upstream with
@@ -141,17 +142,8 @@ Explicit values saved by an administrator are preserved; if those still use
 `/helix`, update the affected settings through API administration.
 
 The empty installation uses the initial admin username/password from `.env`.
-Start at `/login`; API selects the internal login page until a configured SSO
-provider is enabled. Use the same hostname throughout: `localhost` and
+Open `/login` and sign in with those credentials. Use the same hostname throughout: `localhost` and
 `127.0.0.1` have separate browser cookies.
-
-For external SSO, configure the provider in the API and register the public
-callback URL for its domain, such as `http://localhost/sso/callback/<domain>`.
-The provider must permit that local callback. Use HTTPS with a hostname and
-certificate trusted by the browser if the provider requires it; this HTTP example
-does not provision TLS or an identity provider. Use `APP_PORT=80` for this SSO
-example; verify callback URLs with your selected API image before using another
-port. A custom `APP_PORT` is suitable for local password-login testing.
 
 ## Start again, update or stop
 
@@ -218,7 +210,7 @@ unless you intentionally want to select a different installation.
 
 Reuse `.env` and `keyfile.json` with [Getting started](../README.md#getting-started).
 Set real `K8S_APP_HOST`/`K8S_API_HOST` names before preparation for a live cluster.
-Kubernetes starts with a separate empty database: Docker data, users and SSO
+Kubernetes starts with a separate empty database: Docker data, users and application
 configuration are not copied. Use production credentials and approved images/license
 for production.
 
@@ -246,7 +238,7 @@ docker compose logs --tail=100 onify-elasticsearch onify-api onify-app onify-wor
   license/client/instance agreement and compatibility of the selected API/APP tags.
 - **Login still redirects to `/helix/...`:** rerun the update command to fetch
   the current image for your API tag. Check saved `internal_login_page`,
-  `error_url` and `logout_url` settings as described in [Login and SSO](#login-and-sso);
+  `error_url` and `logout_url` settings as described in [Local login](#local-login);
   explicit stored values override the image defaults.
 - **`Failed to initialize agent OVERRIDE_IN_ENV socket`:** use this Compose file's
   empty `ONIFY_websockets_agent_url` in the shared API/worker environment and rerun

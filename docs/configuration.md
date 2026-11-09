@@ -12,12 +12,11 @@ Set the API, APP and Gateway images and approved version tags in
 `kustomization.yaml`. API and worker share the same API image. APP must use an
 **app-root** image built for `/` with an internal API proxy.
 
-Kubernetes and Docker Compose default to Elasticsearch **9.5.6**. Both use the
-internal HTTP endpoint with `xpack.security.enabled=false`, matching the API's
-connection settings. Keep Elasticsearch isolated using the supplied NetworkPolicy
-or private Compose network. Select API/worker images compatible with Elasticsearch
-9.5 and follow the [upgrade precautions](operations.md#elasticsearch-upgrades)
-before reusing existing data.
+The Kubernetes base uses Elasticsearch **9.5.6** with an internal HTTP endpoint
+and `xpack.security.enabled=false`, matching the API's connection settings.
+Keep it isolated using the supplied NetworkPolicy. Select API/worker images
+compatible with Elasticsearch 9.5 and follow the
+[upgrade precautions](operations.md#elasticsearch-upgrades) before reusing existing data.
 
 | File | Purpose |
 |---|---|
@@ -33,7 +32,7 @@ Additional APP runtime settings can be supplied with a Kustomize patch to its
 container's `env`; this does not change values built into its static SPA.
 
 No agent server is deployed. `ONIFY_websockets_agent_url=` disables API/worker
-agent connections in both examples. Set an actual agent URL only when adding
+agent connections. Set an actual agent URL only when adding
 that service to the installation.
 
 Kustomize generates ConfigMaps and Secrets with content hashes. Changing a file
@@ -43,13 +42,13 @@ URL (`http://onify-api:8181`); it does not receive API credentials.
 
 ## Kubernetes settings in .env
 
-Use the same [.env.example](../.env.example) as Docker. Preparation reads it with
-Docker Compose, then creates the literal `config.env` and `secrets.env` files
-used by Kustomize. Do not copy the quoted `.env` directly into those files.
-Only image tags, client/instance codes, admin identity and shared credentials
-carry over from Compose. Kubernetes uses the [installation template](../examples/acme/) for its runtime settings,
-including resource budgets and integrations; Compose service customizations are
-not copied. The following preparation settings have defaults when omitted or empty:
+Create `.env` from [.env.example](../.env.example). Preparation reads its image
+tags, client/instance codes, admin identity, credentials and `K8S_*` settings,
+then creates the installation files. Generated `config.env` and `secrets.env`
+use literal values; do not copy the quoted `.env` directly into them.
+Runtime settings, including resource budgets and integrations, come from the
+[installation template](../examples/acme/). The following preparation settings
+have defaults when omitted or empty:
 
 | Variable | Purpose/default |
 |---|---|
@@ -71,10 +70,10 @@ For a controller with other pod label keys, adjust `network-policy.yaml` in the
 prepared installation before applying it, or use the JSON customer package.
 Review resource budgets in `resources-patch.yaml` for the target cluster.
 
-`.env` is an input for a **new** installation. It does not update an existing
-deployment or transfer Docker's data. `APP_PORT` and `COMPOSE_PROJECT_NAME` only
-control the local Docker installation. Shell overrides follow
-[Docker Compose's precedence](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/#ways-to-set-variables-with-interpolation).
+`.env` is an input for a **new** installation; it does not update an existing one.
+`APP_PORT` and `COMPOSE_PROJECT_NAME` are not used by Kubernetes.
+Shell variables override matching `.env` values according to the parser's
+[precedence rules](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/#ways-to-set-variables-with-interpolation).
 Keep license/password/secret values on one line; quote literal values with single
 quotes as in the template. Unknown extra `.env` variables are not passed to the
 Kubernetes workloads automatically.
@@ -106,7 +105,7 @@ Onify supplies `keyfile.json` for image access. [Package preparation](customer-p
 generates `registryCredentials.json` for each Google registry used by the selected
 images; the [installation guide](../README.md#4-install) uses it to create
 `onify-regcred`. The service account must have read access to all selected image
-repositories. If you later change registry hosts, update the Docker config and
+repositories. If you later change registry hosts, update `registryCredentials.json` and
 reapply the pull Secret; editing image names alone does not update credentials.
 
 ## Resource sizing
@@ -154,7 +153,6 @@ New installations prepared from either `.env` or a customer package inherit this
 profile. Existing installation directories keep their settings: update their
 `resources-patch.yaml`, `config.env`, `gateway.env` and Elasticsearch heap setting
 together, then follow the [update procedure](operations.md#apply-changes).
-The local Docker Desktop example has its own development resource settings.
 
 ## Gateway integrations
 

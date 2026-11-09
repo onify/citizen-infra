@@ -4,10 +4,10 @@ Choose one input format and keep it beside the `keyfile.json` supplied by Onify:
 
 | Input | Use when | Credentials |
 |---|---|---|
-| [.env.example](../.env.example) → `.env` | Sharing settings between Docker and Kubernetes. Requires Docker Compose. | Fill in every secret. |
+| [.env.example](../.env.example) → `.env` | Preparing a Kubernetes installation from environment settings. Requires Compose CLI to parse the file. | Fill in every secret. |
 | [customer.json](../examples/customer-package/customer.json) | Preparing Kubernetes without Compose, or selecting custom Google image repositories/controller labels. | Empty password/secret strings are generated. License is always required. |
 
-For the shared `.env` format, follow [Getting started](../README.md#getting-started)
+For the `.env` format, follow [Getting started](../README.md#getting-started)
 and prepare with:
 
 ```bash
@@ -87,12 +87,11 @@ chmod 600 customer-packages/acme-test/keyfile.json
 ```
 
 The file must contain `type: service_account`, `client_email` and `private_key`.
-Do not base64-encode it, rename a Docker config to `keyfile.json`, or create a new
-Google account/key yourself. Onify provides a key with read access to the API,
-APP and Gateway repositories. The same file is used for
-[Docker login](docker-desktop.md#authenticate-to-gcr-with-keyfilejson).
+Use the original file without base64 conversion. Onify provides the key with
+read access to the API, APP and Gateway repositories; no new Google account or
+key needs to be created.
 
-Preparation checks the JSON and private-key format and generates a Docker config
+Preparation checks the JSON and private-key format and generates registry credentials
 using Google's [`_json_key` authentication](https://docs.cloud.google.com/artifact-registry/docs/docker/authentication#json-key).
 It adds an entry for each image registry in `customer.json`. Supported hosts are
 `gcr.io`, `eu.gcr.io`, `us.gcr.io`, `asia.gcr.io` and regional
@@ -100,7 +99,7 @@ It adds an entry for each image registry in `customer.json`. Supported hosts are
 These local checks do not verify Google permissions, key revocation or image tags.
 
 `registryCredentials.json` is generated output for Kubernetes' image-pull Secret;
-it is not an input keyfile or a Docker `_json_key` login password.
+do not use it as the input `keyfile.json`.
 
 ## 4. Prepare the installation
 
@@ -115,7 +114,7 @@ manifests and environment files, generates `registryCredentials.json` from
 `keyfile.json`, and runs preflight. The resulting license and credentials are
 saved in `secrets.env`; they are not printed.
 Files are readable/writable only by their owner, and directories are private.
-The generated Docker config contains the key as encoded credentials; protect it
+The generated registry credentials contain the encoded key; protect the file
 like the original keyfile. The original stays in the package and is not mounted
 into application containers.
 

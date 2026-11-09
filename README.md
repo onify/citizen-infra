@@ -1,8 +1,8 @@
 # Onify Citizen Infrastructure
 
 Deploy a new Onify Citizen environment: API, APP, worker, Gateway and Elasticsearch.
-Onify supplies a `keyfile.json` for access to its container images, whether you
-install with Docker or Kubernetes.
+Both installation guides use `.env` for settings and the `keyfile.json` supplied
+by Onify for access to its container images. Choose the guide for your environment.
 
 | Task | Guide |
 |---|---|
@@ -18,8 +18,7 @@ install with Docker or Kubernetes.
 
 This Kubernetes guide creates an empty installation. API initializes system data
 and an admin account; import the Citizen workspace/customer content separately.
-No Gateway integrations or agent server are included. Reusing Docker's `.env`
-carries over settings and credentials, not its database or application data.
+Gateway integrations are disabled and no agent server is deployed.
 
 ### Before you start
 
@@ -35,32 +34,43 @@ carries over settings and credentials, not its database or application data.
   Use an APP **app-root** image and API/worker images compatible with Elasticsearch 9.5.
 - Bash 3.2+, `kubectl`, `openssl`, [Mike Farah yq v4](https://github.com/mikefarah/yq#install)
   and [jq 1.6+](https://jqlang.org/download/). On macOS: `brew install kubectl yq jq`.
-- Docker Compose 2.23.1+ to read the shared `.env` with Docker's own syntax.
-  No running Docker engine is needed for preparation.
+- Docker Compose CLI 2.23.1+ to parse `.env` during preparation; no containers
+  are started. The [JSON input format](docs/customer-package.md#alternative-json-customer-package)
+  does not require this tool.
 
 Run the commands from this repository's root, in the same terminal.
 The commands below use client `acme`, instance `test` and namespace `acme-test`.
 Use the directory printed by the script and your configured namespace.
 
-### 1. Reuse your .env and keyfile.json
+### 1. Prepare .env and keyfile.json
 
-Keep the `.env` and Onify-supplied `keyfile.json` you used for Docker beside
-`compose.yaml`. For a fresh installation, copy [.env.example](.env.example) to
-`.env` and fill in its shared settings: the three image tags, client/instance
-codes, license, admin username/password, APP-token secret and client secret.
+Place the `keyfile.json` supplied by Onify in the repository root. For a new
+installation, create `.env` from [.env.example](.env.example). If you have already
+prepared `.env` for this installation, keep that file instead of copying again:
+
+```bash
+cp .env.example .env
+chmod 600 .env keyfile.json
+```
+
+Fill in the three image tags, client/instance codes matching the license, license,
+admin username/password, APP-token secret and client secret. For each of the
+three secrets, use a password manager or run `openssl rand -hex 32` separately.
 
 All `K8S_*` values have [defaults](docs/configuration.md#kubernetes-settings-in-env).
 Before preparation for a live cluster, set `K8S_APP_HOST` and `K8S_API_HOST` to
 distinct real DNS names pointing to its Ingress controller; the default
 `example.com` names cannot provide your TLS certificate. Check the controller,
-issuer and StorageClass settings too. `APP_PORT` only affects Docker.
+issuer and StorageClass settings too. Leave `APP_PORT` unchanged; Kubernetes
+does not use it.
 
-Keep single quotes around license/secret values, as in the Docker guide. Use
-single-line values. Shell variables override matching `.env` values in both
-flows. Protect `.env` and `keyfile.json` with `chmod 600 .env keyfile.json`.
-No Docker login or Google Cloud CLI is needed for Kubernetes preparation.
+Keep license/secret values on one line and retain the single quotes shown in the
+template so `$`, `#` and spaces stay literal. Escape a literal apostrophe as `\'`.
+Shell variables override matching `.env` values. Preparation reads `keyfile.json`
+directly; no registry login or Google Cloud CLI is needed.
 
-Without Docker Compose, use the [JSON customer package](docs/customer-package.md#alternative-json-customer-package).
+For JSON input, follow [Customer package](docs/customer-package.md#alternative-json-customer-package)
+instead of steps 1–2, then continue at [Select the cluster](#3-select-the-cluster).
 
 ### 2. Prepare the installation
 
@@ -69,8 +79,8 @@ bash scripts/prepare-installation.sh --env-file .env
 ```
 
 The script reads `keyfile.json` beside `.env`, creates Kubernetes files and
-`registryCredentials.json`, and runs offline preflight. Shared image tags and
-credentials are preserved; all must be filled in for this input format.
+`registryCredentials.json`, and runs offline preflight. Image tags and credentials
+are taken from `.env`; all must be filled in for this input format.
 
 It reports `deployments/<client_code>-<client_instance>/` and refuses to overwrite
 an existing installation. Save that directory securely. Later `.env` edits do
