@@ -153,3 +153,10 @@ fails, start with [troubleshooting](docs/operations.md#troubleshooting).
 
 Before storing customer data, complete the [runtime checks](docs/operations.md#before-customer-use)
 and configure [backups](docs/backups.md).
+
+## License
+
+The scripts, configuration files and documentation in this repository are
+licensed under the [MIT License](LICENSE).
+Onify products and the container images referenced here are subject to their
+own license terms; this license does not grant rights to those products or images.
