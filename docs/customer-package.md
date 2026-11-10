@@ -59,7 +59,7 @@ the prefilled settings with the cluster administrator.
 | `admin.password` | Initial administrator password, or `""` to generate one. |
 | `app_secret` | APP-token secret, or `""` to generate one. The APP-token also provides administrative API access. |
 | `client_secret` | Client secret, or `""` to generate one. Gateway references the same value. |
-| `images.api`, `images.app`, `images.gateway` | Registry/repository and approved version tag for each image. API and worker share the API image. |
+| `images.api`, `images.app`, `images.gateway` | Registry/repository and approved version tag for each image. API and worker share the API image; APP uses the `citizen/app-root` image. |
 | `ingress.app_host`, `ingress.api_host` | Two different DNS names pointing to the cluster's Ingress controller. |
 | `ingress.class_name`, `ingress.cluster_issuer` | Existing Ingress class and cert-manager ClusterIssuer. Defaults: `nginx` and `letsencrypt-prod`. |
 | `ingress.controller_namespace`, `ingress.controller_labels` | The controller's actual namespace and pod labels, used by NetworkPolicy. |

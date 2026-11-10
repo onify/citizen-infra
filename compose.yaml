@@ -112,7 +112,7 @@ services:
 
 configs:
   app-nginx-redirects:
-    # Keep the browser's public port when the image redirects legacy /helix paths.
+    # Keep redirects on the browser's public host and port.
     content: |
       absolute_redirect off;
 

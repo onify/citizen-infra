@@ -1,0 +1,106 @@
+# Opt-in patch; see docs/security.md for certificates, users and rollout order.
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: onify-elasticsearch
+spec:
+  template:
+    spec:
+      containers:
+        - name: onify-elasticsearch
+          env:
+            - name: xpack.security.enabled
+              value: "true"
+            - name: xpack.security.http.ssl.enabled
+              value: "true"
+            - name: xpack.security.http.ssl.certificate
+              value: tls/tls.crt
+            - name: xpack.security.http.ssl.key
+              value: tls/tls.key
+            - name: ELASTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: onify-elasticsearch-bootstrap
+                  key: password
+          volumeMounts:
+            - name: elasticsearch-tls
+              mountPath: /usr/share/elasticsearch/config/tls
+              readOnly: true
+            - name: elasticsearch-ca
+              mountPath: /usr/share/elasticsearch/config/ca
+              readOnly: true
+      volumes:
+        - name: elasticsearch-tls
+          secret:
+            secretName: onify-elasticsearch-tls
+            defaultMode: 0440
+        - name: elasticsearch-ca
+          configMap:
+            name: onify-elasticsearch-ca
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: onify-api
+spec:
+  template:
+    spec:
+      containers:
+        - name: onify-api
+          env:
+            - name: ONIFY_db_elasticsearch_host
+              value: https://onify-elasticsearch:9200
+            # exp-config needs dotted keys for fields absent from production.json.
+            - name: ONIFY_db.elasticsearch.auth.username
+              valueFrom:
+                secretKeyRef:
+                  name: onify-elasticsearch-client
+                  key: username
+            - name: ONIFY_db.elasticsearch.auth.password
+              valueFrom:
+                secretKeyRef:
+                  name: onify-elasticsearch-client
+                  key: password
+            - name: NODE_EXTRA_CA_CERTS
+              value: /etc/onify/ca/ca.crt
+          volumeMounts:
+            - name: elasticsearch-ca
+              mountPath: /etc/onify/ca
+              readOnly: true
+      volumes:
+        - name: elasticsearch-ca
+          configMap:
+            name: onify-elasticsearch-ca
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: onify-worker
+spec:
+  template:
+    spec:
+      containers:
+        - name: onify-worker
+          env:
+            - name: ONIFY_db_elasticsearch_host
+              value: https://onify-elasticsearch:9200
+            - name: ONIFY_db.elasticsearch.auth.username
+              valueFrom:
+                secretKeyRef:
+                  name: onify-elasticsearch-client
+                  key: username
+            - name: ONIFY_db.elasticsearch.auth.password
+              valueFrom:
+                secretKeyRef:
+                  name: onify-elasticsearch-client
+                  key: password
+            - name: NODE_EXTRA_CA_CERTS
+              value: /etc/onify/ca/ca.crt
+          volumeMounts:
+            - name: elasticsearch-ca
+              mountPath: /etc/onify/ca
+              readOnly: true
+      volumes:
+        - name: elasticsearch-ca
+          configMap:
+            name: onify-elasticsearch-ca

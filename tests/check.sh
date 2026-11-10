@@ -174,6 +174,27 @@ jq -es --slurpfile namespace "$temp/namespace.json" '
             ($gateway.GATEWAY_API_KEY.secret == true and ($env.GATEWAY_API_KEY | nonempty));
             "Gateway API-key authentication requires GATEWAY_API_KEY from a Secret.") |
         object("StatefulSet"; "onify-elasticsearch").spec.template.spec as $pod |
+        environment(container("onify-elasticsearch")) as $elastic |
+        (if $elastic["xpack.security.enabled"].value == "true" then
+            require($elastic["xpack.security.http.ssl.enabled"].value == "true";
+                "Authenticated Elasticsearch requires HTTPS.") |
+            require($elastic.ELASTIC_PASSWORD.secret == true and ($elastic.ELASTIC_PASSWORD.value | nonempty);
+                "Elasticsearch bootstrap password must come from a Secret.") |
+            reduce ["onify-api", "onify-worker"][] as $name (.;
+                environment(container($name)) as $env |
+                require($env.ONIFY_db_elasticsearch_host.value == "https://onify-elasticsearch:9200";
+                    "API and worker must use the Elasticsearch HTTPS endpoint.") |
+                require(all(["ONIFY_db.elasticsearch.auth.username", "ONIFY_db.elasticsearch.auth.password"][];
+                    $env[.].secret == true and ($env[.].value | nonempty));
+                    "Elasticsearch client credentials require dotted environment names and Secret references.") |
+                require($env.NODE_EXTRA_CA_CERTS.value == "/etc/onify/ca/ca.crt" and
+                    any(container($name).volumeMounts[]?; .name == "elasticsearch-ca" and .mountPath == "/etc/onify/ca" and .readOnly == true);
+                    "Mount the Elasticsearch CA read-only for API and worker.") |
+                require($env.NODE_TLS_REJECT_UNAUTHORIZED.value != "0" and
+                    $env["ONIFY_db.elasticsearch.tls.rejectUnauthorized"].value != "false" and
+                    $env.ONIFY_db_elasticsearch_tls_rejectUnauthorized.value != "false";
+                    "Do not disable Elasticsearch certificate verification."))
+         else . end) |
         require(any($pod.volumes[]; .name == "data" and (.persistentVolumeClaim.claimName | nonempty)) and
             any($pod.containers[0].volumeMounts[]; . == {name: "data", mountPath: "/usr/share/elasticsearch/data"});
             "Elasticsearch must mount persistent customer data.") |

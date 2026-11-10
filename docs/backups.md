@@ -61,6 +61,13 @@ kubectl --context "$ONIFY_CONTEXT" -n "$ONIFY_NAMESPACE" rollout status stateful
 
 ## Register the repository and schedule
 
+With the optional [Elasticsearch security patch](security.md#elasticsearch-https-and-credentials),
+replace the HTTP URLs below with `https://onify-elasticsearch:9200`, validate with
+`--cacert /usr/share/elasticsearch/config/ca/ca.crt`, and supply a separate
+authorized backup/restore account using your secret-store procedure. The
+application account is not a backup administrator. Preserve security users/roles
+separately: the application snapshot below explicitly excludes feature states.
+
 Register and verify the repository, then create the schedule:
 
 ```bash

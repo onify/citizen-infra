@@ -1,6 +1,7 @@
 # Onify Citizen Infrastructure
 
 Deploy a new Onify Citizen environment: API, APP, worker, Gateway and Elasticsearch.
+APP uses the `citizen/app-root` image.
 Both installation guides use `.env` for settings and the `keyfile.json` supplied
 by Onify for access to its container images. Choose the guide for your environment.
 
@@ -12,13 +13,19 @@ by Onify for access to its container images. Choose the guide for your environme
 | Change images, resources or integrations | [Configuration](docs/configuration.md) |
 | Update or troubleshoot an installation | [Operations](docs/operations.md) |
 | Set up snapshots and verify recovery | [Backups](docs/backups.md) |
+| Add optional Kubernetes security hardening | [Kubernetes security](docs/security.md) |
 | Understand the repository or run checks | [Development](docs/development.md) |
+
+The [security additions](docs/security.md) are **optional and Kubernetes-only**.
+Enable Elasticsearch HTTPS/authentication, non-root containers, or both explicitly
+in each installation's Kustomize overlay. They are not enabled by the standard
+installation or preparation script. Docker Compose is unchanged.
 
 ## Getting started
 
 This Kubernetes guide creates an empty installation. API initializes system data
 and an admin account; import the Citizen workspace/customer content separately.
-Gateway integrations are disabled and no agent server is deployed.
+Gateway integrations are disabled.
 
 ### Before you start
 

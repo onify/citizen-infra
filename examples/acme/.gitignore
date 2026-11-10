@@ -3,3 +3,6 @@ gateway-secrets.env
 registryCredentials.json
 keyfile.json
 rendered*.yaml
+elasticsearch-*.env
+tls.key
+ca.key

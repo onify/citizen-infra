@@ -58,12 +58,13 @@ it when finished.
 ## Run checks
 
 Use the tools listed in [Getting started](../README.md#before-you-start), including
-Docker Compose. Run all three checks after changing shared templates:
+Docker Compose. Run these checks after changing shared templates:
 
 ```bash
 bash tests/check.sh
 bash tests/prepare-installation.sh
 bash tests/compose.sh
+bash tests/security.sh
 ```
 
 | Check | Coverage |
@@ -71,11 +72,14 @@ bash tests/compose.sh
 | `check.sh` | Kubernetes rendering, workloads, resources, routes, storage/backups, isolation, secret rollouts and authentication. With an installation path, validates that installation instead. |
 | `prepare-installation.sh` | JSON/`.env` inputs, defaults, literal credentials, keyfile conversion, private permissions and overwrite protection. |
 | `compose.sh` | Docker wiring, credentials, disabled integrations, startup dependencies, loopback port, persistent volume isolation and pull policy. |
+| `security.sh` | Optional Kubernetes TLS/auth/non-root wiring and rejection of insecure Elasticsearch settings. |
 
 These use private temporary files and synthetic credentials, with no Docker
 engine, cluster, real license or registry access. They check invalid inputs,
 quoting and secret handling; environment files are never executed as shell code.
 They do not verify image compatibility or application startup.
+The opt-in [security runtime proof](security.md#verification-and-boundaries) uses
+isolated Docker containers and already downloaded images for that bounded check.
 
 For strict Kubernetes JSON schema validation, install
 [kubeconform](https://github.com/yannh/kubeconform#installation):

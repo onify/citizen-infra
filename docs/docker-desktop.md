@@ -115,8 +115,8 @@ Only APP publishes a port, bound to this computer's loopback interface.
 Its existing Nginx serves the SPA and proxies `/api/v2/` and `/login`
 to API at `http://onify-api:8181`. Browser requests and login
 cookies use one origin; API has no separate host port. The inline Nginx config
-keeps legacy `/helix/...` redirects relative so they preserve the public host
-and port, including a custom `APP_PORT`.
+keeps redirects relative to preserve the public host and port, including a
+custom `APP_PORT`.
 
 Gateway validates API user JWTs using the same client code and secret as API.
 All three standard integrations are explicitly disabled; enable only those you
@@ -126,20 +126,17 @@ For Compose, add additional settings explicitly under the relevant service's
 `environment`; adding a name to `.env` alone does not pass it to a container.
 API and worker share the API environment block; Gateway has its own.
 
-No agent server is included; API and worker disable the outbound connection with
-an empty `ONIFY_websockets_agent_url`.
-
 ## Local login
 
-Use the **app-root** image, built to serve the SPA at `/` and call `/api/v2` and
+Use the APP **app-root** image, built to serve the SPA at `/` and call `/api/v2` and
 `/login`. Compose sets its runtime upstream with
 `ONIFY_API_URL_INTERNAL=http://onify-api:8181`. Adding SPA build variables to
 Compose does not rebuild the image.
 
 Use an API image with root-path defaults: `internal_login_page=/login/internal`,
 `error_url=/error` and `logout_url=/logout`. Compose uses the image's own defaults.
-Explicit values saved by an administrator are preserved; if those still use
-`/helix`, update the affected settings through API administration.
+Explicit values saved by an administrator override the image defaults; configure
+the corresponding APP paths through API administration.
 
 The empty installation uses the initial admin username/password from `.env`.
 Open `/login` and sign in with those credentials. Use the same hostname throughout: `localhost` and
@@ -236,13 +233,6 @@ docker compose logs --tail=100 onify-elasticsearch onify-api onify-app onify-wor
   for Elasticsearch host requirements if its logs report a bootstrap failure.
 - **APP opens but login fails:** verify the credentials used on the first start,
   license/client/instance agreement and compatibility of the selected API/APP tags.
-- **Login still redirects to `/helix/...`:** rerun the update command to fetch
-  the current image for your API tag. Check saved `internal_login_page`,
-  `error_url` and `logout_url` settings as described in [Local login](#local-login);
-  explicit stored values override the image defaults.
-- **`Failed to initialize agent OVERRIDE_IN_ENV socket`:** use this Compose file's
-  empty `ONIFY_websockets_agent_url` in the shared API/worker environment and rerun
-  `docker compose up -d --wait --wait-timeout 300`. No agent socket is required.
 - **Login works but `workspace "citizen" not found` appears:** the empty database
   lacks the Citizen workspace/configuration. Import the intended application
   configuration separately; Compose initializes API system data and the admin account.

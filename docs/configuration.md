@@ -17,6 +17,11 @@ and `xpack.security.enabled=false`, matching the API's connection settings.
 Keep it isolated using the supplied NetworkPolicy. Select API/worker images
 compatible with Elasticsearch 9.5 and follow the
 [upgrade precautions](operations.md#elasticsearch-upgrades) before reusing existing data.
+The [security additions](security.md) are **optional and Kubernetes-only**:
+Elasticsearch HTTPS/authentication and non-root workloads can be selected
+independently. Add the chosen patches explicitly to the installation's
+Kustomize overlay; preparation does not enable them. The guide also covers
+the remaining internal TLS choices. Docker Compose is unchanged.
 
 | File | Purpose |
 |---|---|
@@ -30,10 +35,6 @@ shell expansion. Additional API/worker variables can be added to the matching
 file; both containers load every key. Keep credentials in the secret files.
 Additional APP runtime settings can be supplied with a Kustomize patch to its
 container's `env`; this does not change values built into its static SPA.
-
-No agent server is deployed. `ONIFY_websockets_agent_url=` disables API/worker
-agent connections. Set an actual agent URL only when adding
-that service to the installation.
 
 Kustomize generates ConfigMaps and Secrets with content hashes. Changing a file
 changes the pod references and rolls out the affected workloads. Keep generated
