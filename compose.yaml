@@ -32,6 +32,7 @@ services:
       INTERPRET_CHAR_AS_DOT: _
       ONIFY_client_code: ${ONIFY_client_code:?Set ONIFY_client_code in .env}
       ONIFY_client_instance: ${ONIFY_client_instance:?Set ONIFY_client_instance in .env}
+      ONIFY_client_multiTenant: ${ONIFY_client_multiTenant:?Set ONIFY_client_multiTenant in .env}
       ONIFY_db_indexPrefix: onify
       ONIFY_db_elasticsearch_host: http://onify-elasticsearch:9200
       ONIFY_websockets_agent_url: ""
